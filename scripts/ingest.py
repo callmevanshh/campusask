@@ -9,8 +9,10 @@ OUT = Path("data/processed/chunks.jsonl")
 CHUNK_SIZE = 800
 OVERLAP = 150
 
+HEADER = re.compile(r"INDRAPRASTHA INSTITUTE of.*?www\.iiitd\.ac\.in", re.S)
 
 def clean(text: str) -> str:
+    text = HEADER.sub("", text)
     text = text.replace("\x00", "")
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)

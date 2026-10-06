@@ -1,10 +1,11 @@
 import json
+import sys
 from pathlib import Path
 
 from app.retrieval import search
 
 DEFAULT_SRC = "UG-Regulations-2025-Oct.pdf"
-qs = [json.loads(l) for l in Path("eval/questions.jsonl").open(encoding="utf-8") if l.strip()]
+qs = [json.loads(l) for l in Path(sys.argv[1] if len(sys.argv) > 1 else "eval/questions.jsonl").open(encoding="utf-8") if l.strip()]
 ans = [q for q in qs if q["answerable"]]
 unans = [q for q in qs if not q["answerable"]]
 
