@@ -1,5 +1,5 @@
 import os
-
+import time
 import httpx
 from dotenv import load_dotenv
 
@@ -21,12 +21,13 @@ def generate(question, chunks):
     )
     prompt = f"{SYSTEM}\n\nSOURCES:\n{context}\n\nQUESTION: {question}"
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    r = httpx.post(
-        url,
-        headers={"x-goog-api-key": key},
-        json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.1}},
-        timeout=60,
-    )
-    r.raise_for_status()
+    payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.1}}
+    for attempt in range(4):
+        r = httpx.post(url, headers={"x-goog-api-key": key}, json=payload, timeout=60)
+        if r.status_code in (429, 503) and attempt < 3:
+            time.sleep(15 * (attempt + 1))  # wait and try again
+            continue
+        r.raise_for_status()
+        break
     parts = r.json()["candidates"][0]["content"]["parts"]
     return "".join(p.get("text", "") for p in parts)

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CampusAsk</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.5}
+  input{width:100%;padding:.7rem;font-size:1rem;box-sizing:border-box}
+  button{margin-top:.6rem;padding:.6rem 1.2rem;font-size:1rem;cursor:pointer}
+  .box{margin-top:1.2rem;padding:1rem;border:1px solid #8884;border-radius:8px;white-space:pre-wrap}
+  .src{font-size:.9rem;margin-top:.8rem}
+  .src details{margin:.4rem 0;padding:.5rem;border-left:3px solid #8886;white-space:pre-wrap}
+  .warn{font-size:.85rem;opacity:.75;margin-top:2rem}
+</style>
+</head>
+<body>
+<h1>CampusAsk</h1>
+<p>Ask about IIIT Delhi academic rules. Answers come only from official public documents.</p>
+<input id="q" placeholder="e.g. What happens if I get two F grades in consecutive semesters?" maxlength="300">
+<button id="go">Ask</button>
+<div id="out"></div>
+<p class="warn">Unofficial student project. It can be wrong or outdated. Always verify with the academic office.</p>
+<script>
+const q = document.getElementById('q'), out = document.getElementById('out'), go = document.getElementById('go');
+async function ask() {
+  const question = q.value.trim();
+  if (question.length < 3) return;
+  go.disabled = true; out.textContent = 'Thinking...';
+  try {
+    const r = await fetch('/ask', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({question})});
+    const data = await r.json();
+    out.textContent = '';
+    if (!r.ok) {
+      out.textContent = typeof data.detail === 'string' ? data.detail : 'Please enter a question (3 to 300 characters).';
+      return;
+    }
+    const box = document.createElement('div'); box.className = 'box'; box.textContent = data.answer; out.appendChild(box);
+    if (data.sources.length) {
+      const s = document.createElement('div'); s.className = 'src'; s.append('Sources:');
+      data.sources.forEach(x => {
+        const d = document.createElement('details');
+        const sm = document.createElement('summary');
+        sm.textContent = '[' + x.n + '] ' + x.source + ' (page ' + x.page + ')';
+        const body = document.createElement('div');
+        body.textContent = x.text;
+        d.appendChild(sm);
+        d.appendChild(body);
+        s.appendChild(d);
+      });
+      out.appendChild(s);
+    }
+  } catch (e) { out.textContent = 'Network error.'; }
+  finally { go.disabled = false; }
+}
+go.onclick = ask;
+q.addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+</script>
+</body>
+</html>
