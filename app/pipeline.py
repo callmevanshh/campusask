@@ -47,7 +47,7 @@ def answer(question: str) -> dict:
     if REFUSAL in text:
         result = {"answer": REFUSAL, "sources": []}
     else:
-        cited = {int(n) for n in re.findall(r"\[(\d+)\]", text)}
+        cited = {int(n) for grp in re.findall(r"\[([\d,\s]+)\]", text) for n in re.findall(r"\d+", grp)}
         sources = [s for s in _passages(chunks) if not cited or s["n"] in cited]
         result = {"answer": text, "sources": sources}
 
