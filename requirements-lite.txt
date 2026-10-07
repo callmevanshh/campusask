@@ -1,0 +1,6 @@
+fastapi==0.142.2
+uvicorn==0.54.0
+httpx==0.28.1
+python-dotenv==1.2.4
+numpy==2.5.3
+rank-bm25==0.2.2
