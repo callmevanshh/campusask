@@ -28,7 +28,7 @@ class AskRequest(BaseModel):
     question: str = Field(min_length=3, max_length=300)
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     return {"status": "ok"}
 

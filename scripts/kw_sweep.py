@@ -8,7 +8,7 @@ def best(q):
     return max((c["kw"] for c in search(q, k=4, mode="keyword")), default=0.0)
 
 
-for name, path in (("dev", "eval/questions.jsonl"), ("test", "eval/questions_test.jsonl")):
+for name, path in (("dev", "eval/questions.jsonl"), ("test", "eval/questions_test.jsonl"), ("messy", "eval/questions_messy.jsonl")):
     qs = [json.loads(l) for l in Path(path).open(encoding="utf-8") if l.strip()]
     a = [best(q["q"]) for q in qs if q["answerable"]]
     u = [best(q["q"]) for q in qs if not q["answerable"]]
