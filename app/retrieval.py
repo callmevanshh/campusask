@@ -24,8 +24,9 @@ STOP = {"the", "a", "an", "is", "are", "was", "were", "am", "of", "to", "in", "a
 
 SYNONYMS = {"sem": "semester", "sems": "semester", "honour": "honor", "honours": "honor",
             "intern": "internship", "interns": "internship", "gpa": "cgpa", "uni": "university"}
-EXPAND = {"backlog": ["fail", "repeat"], "backlogs": ["fail", "repeat"]}
-
+EXPAND = {"backlog": ["fail", "repeat"], "backlogs": ["fail", "repeat"],
+          "criteria": ["requirements"], "criterion": ["requirements"],
+          "long": ["duration"], "length": ["duration"]}
 
 def _normalize(text):
     text = text.lower()
@@ -74,16 +75,33 @@ if not LITE:
     _model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
+BRANCHES = {"cse", "csai", "csam", "csd", "csss", "csb", "ece", "eve", "csecon"}
+BRANCH_W = float(os.getenv("BRANCH_W", "0.5"))
+_branch_of = [r["source"].split("-")[0].lower() if r["source"].split("-")[0].lower() in BRANCHES else None
+              for r in _rows]
+
+
+def _scope_weights(query):
+    mentioned = {w for w in re.findall(r"[a-z]+", query.lower()) if w in BRANCHES}
+    w = np.ones(len(_rows))
+    for i, b in enumerate(_branch_of):
+        if b is None:
+            continue
+        w[i] = (1.0 if b in mentioned else BRANCH_W * 0.7) if mentioned else BRANCH_W
+    return w
+
+
 def search(query, k=4, mode="hybrid"):
+    w = _scope_weights(query)
     kw = _bm25.get_scores(_tok_query(query))
-    kw_rank = [int(i) for i in np.argsort(-kw)[:20] if kw[i] > 0]
+    kw_rank = [int(i) for i in np.argsort(-(kw * w))[:20] if kw[i] > 0]
 
     if LITE or mode == "keyword":
         return [{**_rows[i], "sem": 0.0, "kw": float(kw[i])} for i in kw_rank[:k]]
 
     qv = _model.encode([query], normalize_embeddings=True)[0]
     sem = _vecs @ qv
-    sem_rank = [int(i) for i in np.argsort(-sem)[:20]]
+    sem_rank = [int(i) for i in np.argsort(-(sem * w))[:20]]
 
     if mode == "semantic":
         order = sem_rank[:k]

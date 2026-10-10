@@ -9,17 +9,17 @@
 {"q": "Can I replace a core course with an elective after failing it twice?", "pages": [15], "answerable": true}
 {"q": "What is the minimum percentage required in class 12 for admission eligibility?", "pages": [3], "answerable": true}
 {"q": "Can I do a full 8th semester internship outside college?", "pages": [11, 22], "answerable": true}
-{"q": "How many total credits do I need to graduate from BTech?", "pages": [25], "answerable": true}
+{"q": "How many total credits do I need to graduate from BTech?", "pages": [25], "answerable": true, "contains": ["156"]}
 {"q": "What is the minimum CGPA required to get an Honors degree?", "pages": [26], "answerable": true}
 {"q": "Can I drop my worst grades to boost my CGPA?", "pages": [19], "answerable": true}
-{"q": "How many online course credits can I count towards my degree?", "pages": [7], "answerable": true}
+{"q": "How many online course credits can I count towards my degree?", "pages": [7], "answerable": true, "contains": ["no more than 8"]}
 {"q": "What is the Delhi vs Outside Delhi quota split for admissions?", "pages": [3, 4], "answerable": true}
 {"q": "What criteria is used for branch transfer after first year?", "pages": [23, 24], "answerable": true}
 {"q": "Is there a maximum cap on medical leaves per semester?", "pages": [12], "answerable": true}
 {"q": "What happens if I fail in a core course?", "pages": [15, 16], "answerable": true}
-{"q": "How many credits is a standard full-semester course worth?", "pages": [6], "answerable": true}
+{"q": "How many credits is a standard full-semester course worth?", "pages": [6], "answerable": true, "contains": ["of 4 credits", "4-credit course"]}
 {"q": "Can I take extra credits beyond the normal semester limit?", "pages": [10, 11], "answerable": true}
-{"q": "What is the maximum time allowed to finish BTech degree?", "pages": [25], "answerable": true}
+{"q": "What is the maximum time allowed to finish BTech degree?", "pages": [25], "answerable": true, "contains": ["maximum duration within which"]}
 {"q": "Do I get TA duty credits in BTech?", "pages": [7], "answerable": true}
 {"q": "What grade is given for satisfactory completion of non-credit requirements?", "pages": [14, 15], "answerable": true}
 {"q": "Can I repeat a course to improve my grade if I already got a C?", "pages": [16], "answerable": true}
@@ -28,7 +28,7 @@
 {"q": "Can I convert my BTech project into an Honors thesis?", "pages": [], "answerable": false}
 {"q": "What is the minimum SGPA needed to avoid academic probation?", "pages": [21], "answerable": true}
 {"q": "Are SGPA and CGPA calculated up to two decimal places?", "pages": [], "answerable": false}
-{"q": "Can a student take an Independent Study course in BTech?", "pages": [7], "answerable": true}
+{"q": "Can a student take an Independent Study course in BTech?", "pages": [7], "answerable": true, "contains": ["independent study"]}
 {"q": "What is the maximum number of credits allowed in a summer term?", "pages": [10], "answerable": true}
 {"q": "What happens if a student is caught indulging in academic dishonesty?", "pages": [28], "answerable": true}
 {"q": "Is SGPA calculated using all registered courses in that semester?", "pages": [17], "answerable": true}

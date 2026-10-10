@@ -1,0 +1,12 @@
+{"q": "how many credits to graduate", "pages": [25], "contains": ["156"], "answerable": true}
+{"q": "attendance", "pages": [22], "answerable": true}
+{"q": "semester leave", "pages": [22], "answerable": true}
+{"q": "grading scale", "pages": [14], "answerable": true}
+{"q": "internship eligibility", "pages": [11, 22], "answerable": true}
+{"q": "dual degree", "pages": [25], "answerable": true}
+{"q": "academic warning", "pages": [21], "answerable": true}
+{"q": "branch change", "pages": [23, 24], "answerable": true}
+{"q": "minor requirement", "pages": [26], "answerable": true}
+{"q": "bitcoin price", "pages": [], "answerable": false}
+{"q": "recipe for pasta", "pages": [], "answerable": false}
+{"q": "hostel food menu", "pages": [], "answerable": false}

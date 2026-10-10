@@ -8,7 +8,7 @@ from app.retrieval import search
 
 LITE = os.getenv("LITE") == "1"
 SEM_MIN = 0.40
-KW_MIN = float(os.getenv("KW_MIN", "4"))
+KW_MIN = float(os.getenv("KW_MIN", "2"))
 REFUSAL = "I could not find this in the documents."
 _cache = {}
 
