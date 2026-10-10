@@ -13,6 +13,8 @@ LITE = os.getenv("LITE") == "1"
 DATA = Path("data/processed")
 _rows = [json.loads(l) for l in (DATA / "chunks_kept.jsonl").open(encoding="utf-8")]
 _stem = snowballstemmer.stemmer("english").stemWord
+def _doc_text(r):
+    return (r.get("section", "") + " " + r["text"]).strip()
 
 STOP = {"the", "a", "an", "is", "are", "was", "were", "am", "of", "to", "in", "and", "or", "what",
         "if", "i", "my", "me", "we", "you", "your", "for", "on", "do", "does", "how", "can", "be",
@@ -36,7 +38,7 @@ def _words(text):
     return [w for w in re.findall(r"[a-z0-9]+", _normalize(text)) if w not in STOP]
 
 
-_vocab = {w for r in _rows for w in _words(r["text"])}
+_vocab = {w for r in _rows for w in _words(_doc_text(r))}
 _by_first = defaultdict(list)
 for _w in sorted(_vocab):
     _by_first[_w[0]].append(_w)
@@ -63,7 +65,7 @@ def _tok_query(text):
     return [_stem(w) for w in out]
 
 
-_bm25 = BM25Okapi([_tok_doc(r["text"]) for r in _rows])
+_bm25 = BM25Okapi([_tok_doc(_doc_text(r)) for r in _rows])
 
 if not LITE:
     from sentence_transformers import SentenceTransformer

@@ -12,10 +12,6 @@ KW_MIN = float(os.getenv("KW_MIN", "4"))
 REFUSAL = "I could not find this in the documents."
 _cache = {}
 
-DOC_URLS = {
-    "UG-Regulations-2025-Oct.pdf": "https://iiitd.ac.in/sites/default/files/docs/education/2025/2025-October-UG%20Regulations.pdf",
-    "BTech-Ordinances.pdf": "https://iiitd.ac.in/sites/default/files/docs/education/BTech-Ordinances.pdf",
-}
 
 
 def _relevant(chunks):
@@ -27,10 +23,13 @@ def _relevant(chunks):
 def _passages(chunks):
     out = []
     for i, c in enumerate(chunks, 1):
-        base = DOC_URLS.get(c["source"])
+        url = c.get("url")
+        web = c.get("kind") == "web"
         out.append({
-            "n": i, "source": c["source"], "page": c["page"], "text": c["text"],
-            "url": f"{base}#page={c['page']}" if base else None,
+            "n": i, "source": c["source"], "title": c.get("title", c["source"]),
+            "version": c.get("version", ""), "section": c.get("section", ""),
+            "page": None if web else c["page"], "text": c["text"],
+            "url": (url if web else f"{url}#page={c['page']}") if url else None,
         })
     return out
 

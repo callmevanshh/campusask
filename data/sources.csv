@@ -1,3 +1,13 @@
-document,url,version_date,applies_to
-B.Tech Ordinances,https://iiitd.ac.in/sites/default/files/docs/education/BTech-Ordinances.pdf,check on site,all B.Tech
-UG Regulations (Oct 2025),https://iiitd.ac.in/sites/default/files/docs/education/2025/2025-October-UG Regulations.pdf,Oct 2025,check your batch
+file,title,url,version,exclude_pages
+UG-Regulations-2025-Oct.pdf,UG Regulations,https://iiitd.ac.in/sites/default/files/docs/education/2025/2025-October-UG%20Regulations.pdf,Oct 2025,29-34
+BTech-Ordinances.pdf,B.Tech. Ordinances,https://iiitd.ac.in/sites/default/files/docs/education/BTech-Ordinances.pdf,Current,
+CSE-Regulations.pdf,CSE Regulations,https://iiitd.ac.in/sites/default/files/docs/education/2026/2026-July-BTech(CSE)-Regulations%20(1).pdf,Aug 2026,
+ECE-Regulations.pdf,ECE Regulations,https://iiitd.ac.in/sites/default/files/docs/education/2024/2024-May-BTech(ECE)-Regulations.pdf,May 2024,
+CSAM-Regulations.pdf,CSAM Regulations,https://iiitd.ac.in/sites/default/files/docs/education/2024/2024-May-BTech(CSAM)-Regulations.pdf,May 2024,
+CSAI-Regulations.pdf,CSAI Regulations,https://iiitd.ac.in/sites/default/files/docs/education/2026/2026-July-BTech(CSAI)-Regulations%20(1).pdf,Aug 2026,
+CSD-Regulations.pdf,CSD Regulations,https://iiitd.ac.in/sites/default/files/docs/education/2024/2024-May-BTech(CSD)-Regulations.pdf,May 2024,
+CSSS-Regulations.pdf,CSSS Regulations,https://iiitd.ac.in/sites/default/files/docs/education/2024/2024-May-BTech(CSSS)-Regulations.pdf,May 2024,
+CSB-Regulations.pdf,CSB Regulations,https://iiitd.ac.in/sites/default/files/docs/education/2024/2024-August-BTech(CSB)-Regulations.pdf,Aug 2024,
+EVE-Regulations.pdf,EVE Regulations,https://iiitd.ac.in/sites/default/files/docs/education/2025/2025-October-BTech(EVE)-Regulations.pdf,Oct 2025,
+CSECON-Regulations.pdf,CSECON Regulations,https://iiitd.ac.in/sites/default/files/docs/education/2025/2025-Jan-BTech(CSECON)-Regulations_64th%20Senate.pdf,Jan 2025,
+Evaluation-Policy.txt,Evaluation Policy (web page),https://iiitd.ac.in/academics/resources/evaluation,Aug 2025,

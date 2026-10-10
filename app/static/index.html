@@ -1,68 +1,93 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CampusAsk</title>
+<title>CampusAsk · IIIT Delhi academic rules</title>
+<meta name="description" content="Cited answers to questions about IIIT Delhi academic rules, from official public documents.">
+<link rel="icon" href="data:,">
 <style>
-  body{font-family:system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.5}
-  input{width:100%;padding:.7rem;font-size:1rem;box-sizing:border-box}
-  button{margin-top:.6rem;padding:.6rem 1.2rem;font-size:1rem;cursor:pointer}
-  .box{margin-top:1.2rem;padding:1rem;border:1px solid #8884;border-radius:8px;white-space:pre-wrap}
-  .src{font-size:.9rem;margin-top:.8rem}
-  .src details{margin:.4rem 0;padding:.5rem;border-left:3px solid #8886;white-space:pre-wrap}
-  .warn{font-size:.85rem;opacity:.75;margin-top:2rem}
-  .chip{display:inline-block;margin:.4rem .4rem 0 0;padding:.35rem .7rem;border:1px solid #8886;border-radius:999px;cursor:pointer;font-size:.85rem}
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --text:#1f2430; --muted:#5b6475; --border:#dde1e8;
+  --accent:#1f3a68; --accent-text:#ffffff; --accent-soft:#e8edf6; --focus:#2f5aa8; --err:#a12626;
+}
+[data-theme="dark"]{
+  --bg:#121417; --card:#1a1d22; --text:#e8eaee; --muted:#9aa3b2; --border:#2b3038;
+  --accent:#7d9fdc; --accent-text:#0e1116; --accent-soft:#222a38; --focus:#9bb8ee; --err:#f08a8a;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,"Segoe UI",Inter,Roboto,system-ui,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--border)}
+.bar{max-width:820px;margin:0 auto;padding:.9rem 1.25rem;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;flex-direction:column;line-height:1.25}
+.brand b{font-size:1.15rem;letter-spacing:.2px;color:var(--accent)}
+.brand span{font-size:.8rem;color:var(--muted)}
+.ghost{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.4rem .8rem;font:inherit;font-size:.85rem;cursor:pointer}
+.ghost:hover{background:var(--accent-soft)}
+main{max-width:820px;margin:0 auto;padding:2rem 1.25rem 2rem}
+h1{font-size:1.6rem;line-height:1.3;margin:0 0 .4rem;font-weight:650}
+.lead{margin:0 0 1.5rem;color:var(--muted)}
+.ask{display:flex;gap:.6rem}
+.ask input{flex:1;min-width:0;padding:.8rem 1rem;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:10px}
+.ask input:focus,button:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-text);border:0;border-radius:10px;padding:.8rem 1.5rem;font:inherit;font-weight:600;cursor:pointer}
+.primary:disabled{opacity:.6;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 0}
+.chip{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:999px;padding:.4rem .85rem;font:inherit;font-size:.85rem;cursor:pointer}
+.chip:hover{border-color:var(--accent);background:var(--accent-soft)}
+.label{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2rem 0 .5rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.25rem;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.card p{margin:.2rem 0 .8rem}.card p:last-child{margin-bottom:0}
+.card ul,.card ol{margin:.2rem 0 .8rem;padding-left:1.3rem}
+.card.muted{background:var(--accent-soft)}
+.card.error{border-color:var(--err);color:var(--err)}
+.cite{display:inline-block;min-width:1.3em;padding:0 .3em;margin:0 .1em;border-radius:5px;background:var(--accent-soft);color:var(--accent);font-size:.75em;font-weight:700;text-align:center;text-decoration:none}
+details{background:var(--card);border:1px solid var(--border);border-radius:10px;margin:.5rem 0}
+summary{cursor:pointer;padding:.7rem 1rem;font-size:.9rem;font-weight:600}
+.meta{font-weight:400;color:var(--muted)}
+.srcbody{padding:0 1rem 1rem;font-size:.9rem;color:var(--muted);white-space:pre-wrap}
+.srcbody a{display:inline-block;margin-top:.7rem;color:var(--accent);font-weight:600}
+.loading{display:flex;align-items:center;gap:.7rem;color:var(--muted)}
+.spin{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;flex:none}
+@keyframes s{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+footer{max-width:820px;margin:0 auto;padding:0 1.25rem 2.5rem;font-size:.8rem;color:var(--muted)}
+.sr{position:absolute;left:-9999px}
+@media(max-width:520px){.ask{flex-direction:column}.primary{width:100%}h1{font-size:1.35rem}}
 </style>
 </head>
 <body>
-<h1>CampusAsk</h1>
-<p>Ask about IIIT Delhi academic rules. Answers come only from official public documents.</p>
-<input id="q" placeholder="e.g. What happens if I get two F grades in consecutive semesters?" maxlength="300">
-<button id="go">Ask</button>
-<div id="chips"></div>
-<div id="out"></div>
-<p class="warn">Unofficial student project. It can be wrong or outdated. Always verify with the academic office.</p>
-<script>
-const q = document.getElementById('q'), out = document.getElementById('out'), go = document.getElementById('go');
-async function ask() {
-  const question = q.value.trim();
-  if (question.length < 3) return;
-  go.disabled = true; out.textContent = 'Thinking...';
-  try {
-    const r = await fetch('/ask', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({question})});
-    const data = await r.json();
-    out.textContent = '';
-    if (!r.ok) {
-      out.textContent = typeof data.detail === 'string' ? data.detail : 'Please enter a question (3 to 300 characters).';
-      return;
-    }
-    const box = document.createElement('div'); box.className = 'box'; box.textContent = data.answer; out.appendChild(box);
-    if (data.sources.length) {
-      const s = document.createElement('div'); s.className = 'src'; s.append('Sources:');
-      data.sources.forEach(x => {
-        const d = document.createElement('details');
-        const sm = document.createElement('summary');
-        sm.textContent = '[' + x.n + '] ' + x.source + ' (page ' + x.page + ')';
-        const body = document.createElement('div');
-        body.textContent = x.text;
-        d.appendChild(sm);
-        d.appendChild(body);
-        if (x.url) {
-          const a = document.createElement('a');
-          a.href = x.url; a.target = '_blank'; a.rel = 'noopener';
-          a.textContent = 'Open the official PDF at page ' + x.page;
-          a.style.display = 'block'; a.style.marginTop = '.5rem';
-          d.appendChild(a);
-        }
-        s.appendChild(d);
-      });
-      out.appendChild(s);
-    }
-  } catch (e) { out.textContent = 'Network error.'; }
-  finally { go.disabled = false; }
-}
+<header>
+  <div class="bar">
+    <div class="brand"><b>CampusAsk</b><span>IIIT Delhi academic rules · unofficial</span></div>
+    <button id="theme" class="ghost" type="button">Dark mode</button>
+  </div>
+</header>
 
+<main>
+  <h1>Ask about IIIT Delhi academic rules</h1>
+  <p class="lead">Answers come only from official public documents, with the source page shown so you can verify them.</p>
+
+  <form id="form" class="ask" autocomplete="off">
+    <label for="q" class="sr">Your question</label>
+    <input id="q" maxlength="300" minlength="3" required placeholder="e.g. What is the attendance rule?">
+    <button id="go" class="primary" type="submit">Ask</button>
+  </form>
+  <div class="chips" id="chips" aria-label="Suggested questions"></div>
+
+  <div id="out" aria-live="polite"></div>
+</main>
+
+<footer>
+  Unofficial student project, not an official IIIT Delhi service. Answers are generated from public documents
+  and can be wrong or outdated. Always verify with the academic office.
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const q = $('q'), go = $('go'), out = $('out');
+const NOT_FOUND = 'I could not find this in the documents.';
 const SUGGESTED = [
   'What is the attendance rule?',
   'What happens if I get two F grades in consecutive semesters?',
@@ -71,15 +96,146 @@ const SUGGESTED = [
   'What are the requirements for an Honors degree?',
   'Can I withdraw from a course after the mid-sem?'
 ];
-SUGGESTED.forEach(t => {
-  const c = document.createElement('span');
-  c.className = 'chip'; c.textContent = t;
-  c.onclick = () => { q.value = t; ask(); };
-  document.getElementById('chips').appendChild(c);
-});
 
-go.onclick = ask;
-q.addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+/* ---------- theme ---------- */
+const root = document.documentElement;
+function setTheme(t) {
+  root.setAttribute('data-theme', t);
+  try { localStorage.setItem('theme', t); } catch (e) {}
+  $('theme').textContent = t === 'dark' ? 'Light mode' : 'Dark mode';
+}
+let saved = null;
+try { saved = localStorage.getItem('theme'); } catch (e) {}
+setTheme(saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+$('theme').onclick = () => setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+
+/* ---------- safe rendering (no innerHTML) ---------- */
+function inline(parent, text) {
+  const re = /\*\*(.+?)\*\*|\[(\d+(?:\s*,\s*\d+)*)\]/g;
+  let last = 0, m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) parent.append(text.slice(last, m.index));
+    if (m[1] !== undefined) {
+      const s = document.createElement('strong'); s.textContent = m[1]; parent.append(s);
+    } else {
+      m[2].split(',').map(x => x.trim()).forEach(n => {
+        const a = document.createElement('a');
+        a.className = 'cite'; a.href = '#src-' + n; a.textContent = n;
+        a.onclick = e => {
+          e.preventDefault();
+          const d = document.getElementById('src-' + n);
+          if (d) { d.open = true; d.scrollIntoView({behavior: 'smooth', block: 'nearest'}); }
+        };
+        parent.append(a);
+      });
+    }
+    last = re.lastIndex;
+  }
+  if (last < text.length) parent.append(text.slice(last));
+}
+
+function block(container, text) {
+  let list = null;
+  text.split('\n').forEach(raw => {
+    const line = raw.trim();
+    if (!line) { list = null; return; }
+    const li = line.match(/^([*\-•]|\d+\.)\s+(.*)$/);
+    if (li) {
+      if (!list) {
+        list = document.createElement(/^\d/.test(li[1]) ? 'ol' : 'ul');
+        container.appendChild(list);
+      }
+      const item = document.createElement('li'); inline(item, li[2]); list.appendChild(item);
+    } else {
+      list = null;
+      const p = document.createElement('p'); inline(p, line); container.appendChild(p);
+    }
+  });
+}
+
+function label(text) {
+  const l = document.createElement('div'); l.className = 'label'; l.textContent = text; out.appendChild(l);
+}
+
+function showError(msg) {
+  const c = document.createElement('div'); c.className = 'card error'; c.setAttribute('role', 'alert');
+  c.textContent = msg; out.appendChild(c);
+}
+
+function render(data) {
+  label('Answer');
+  const card = document.createElement('div');
+  if (data.answer.trim() === NOT_FOUND) {
+    card.className = 'card muted';
+    block(card, 'I could not find this in the indexed documents.');
+    block(card, 'Try rephrasing with the key terms (for example "internship eligibility" or "attendance rule"), or check with the academic office. Only some official documents are indexed so far.');
+    out.appendChild(card);
+    return;
+  }
+  card.className = 'card';
+  block(card, data.answer);
+  out.appendChild(card);
+
+  if (data.sources && data.sources.length) {
+    label('Sources');
+    data.sources.forEach(s => {
+      const d = document.createElement('details'); d.id = 'src-' + s.n;
+      const sm = document.createElement('summary');
+      sm.append('[' + s.n + '] ' + (s.title || s.source) + ' ');
+      const meta = document.createElement('span'); meta.className = 'meta';
+      meta.textContent = '· ' + [s.version, s.section, s.page ? 'page ' + s.page : ''].filter(Boolean).join(' · ');
+      sm.appendChild(meta);
+      d.appendChild(sm);
+      const body = document.createElement('div'); body.className = 'srcbody';
+      body.textContent = s.text.replace(/\n(?!\n)/g, ' ');
+      if (s.url) {
+        body.appendChild(document.createElement('br'));
+        const a = document.createElement('a');
+        a.href = s.url; a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = s.page ? 'Open the official PDF at page ' + s.page : 'Open the official web page';
+        body.appendChild(a);
+      }
+      d.appendChild(body);
+      out.appendChild(d);
+    });
+  }
+}
+
+/* ---------- asking ---------- */
+async function ask(question) {
+  question = question.trim();
+  if (question.length < 3) return;
+  go.disabled = true; out.replaceChildren();
+  const load = document.createElement('div'); load.className = 'card loading';
+  const sp = document.createElement('div'); sp.className = 'spin';
+  const lt = document.createElement('span'); lt.textContent = 'Searching the documents…';
+  load.append(sp, lt); out.appendChild(load);
+  const t1 = setTimeout(() => lt.textContent = 'Preparing the answer…', 2500);
+  const t2 = setTimeout(() => lt.textContent = 'The server may be waking up. This can take up to a minute.', 9000);
+  try {
+    const r = await fetch('/ask', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({question})});
+    const data = await r.json();
+    out.replaceChildren();
+    if (!r.ok) {
+      showError(typeof data.detail === 'string' ? data.detail : 'Please enter a question of 3 to 300 characters.');
+      return;
+    }
+    render(data);
+  } catch (e) {
+    out.replaceChildren();
+    showError('Could not reach the server. Check your connection and try again.');
+  } finally {
+    clearTimeout(t1); clearTimeout(t2); go.disabled = false;
+  }
+}
+
+$('form').addEventListener('submit', e => { e.preventDefault(); ask(q.value); });
+SUGGESTED.forEach(t => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'chip'; b.textContent = t;
+  b.onclick = () => { q.value = t; ask(t); };
+  $('chips').appendChild(b);
+});
 </script>
 </body>
 </html>
