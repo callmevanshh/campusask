@@ -10,7 +10,7 @@ Path("data/processed/chunks_kept.jsonl").write_text(
 print("chunks:", len(rows))
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
-texts = [(r["section"] + ". " + r["text"]) if r.get("section") else r["text"] for r in rows]
+texts = [" ".join(x for x in (r.get("section", ""), r.get("index_extra", ""), r["text"]) if x) for r in rows]
 vecs = model.encode(texts, normalize_embeddings=True, show_progress_bar=True)
 np.save("data/processed/embeddings.npy", vecs)
 print("embeddings shape:", vecs.shape)

@@ -7,87 +7,99 @@
 <meta name="description" content="Cited answers to questions about IIIT Delhi academic rules, from official public documents.">
 <link rel="icon" href="data:,">
 <style>
-:root{
-  --bg:#f5f6f8; --card:#ffffff; --text:#1f2430; --muted:#5b6475; --border:#dde1e8;
-  --accent:#1f3a68; --accent-text:#ffffff; --accent-soft:#e8edf6; --focus:#2f5aa8; --err:#a12626;
-}
-[data-theme="dark"]{
-  --bg:#121417; --card:#1a1d22; --text:#e8eaee; --muted:#9aa3b2; --border:#2b3038;
-  --accent:#7d9fdc; --accent-text:#0e1116; --accent-soft:#222a38; --focus:#9bb8ee; --err:#f08a8a;
-}
+:root{--bg:#f5f6f8;--card:#fff;--text:#1f2430;--muted:#5b6475;--border:#dde1e8;--accent:#1f3a68;--accent-text:#fff;--accent-soft:#e8edf6;--focus:#2f5aa8;--err:#a12626}
+[data-theme="dark"]{--bg:#121417;--card:#1a1d22;--text:#e8eaee;--muted:#9aa3b2;--border:#2b3038;--accent:#7d9fdc;--accent-text:#0e1116;--accent-soft:#222a38;--focus:#9bb8ee;--err:#f08a8a}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,"Segoe UI",Inter,Roboto,system-ui,sans-serif}
+body{margin:0;min-height:100dvh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,"Segoe UI",Inter,Roboto,system-ui,sans-serif}
 header{background:var(--card);border-bottom:1px solid var(--border)}
-.bar{max-width:820px;margin:0 auto;padding:.9rem 1.25rem;display:flex;align-items:center;justify-content:space-between}
+.bar{max-width:820px;margin:0 auto;padding:.8rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
 .brand{display:flex;flex-direction:column;line-height:1.25}
-.brand b{font-size:1.15rem;letter-spacing:.2px;color:var(--accent)}
-.brand span{font-size:.8rem;color:var(--muted)}
-.ghost{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.4rem .8rem;font:inherit;font-size:.85rem;cursor:pointer}
+.brand b{font-size:1.15rem;color:var(--accent)}
+.brand span{font-size:.78rem;color:var(--muted)}
+.tools{display:flex;gap:.5rem;flex-wrap:wrap}
+.ghost{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.4rem .7rem;font:inherit;font-size:.85rem;cursor:pointer}
 .ghost:hover{background:var(--accent-soft)}
-main{max-width:820px;margin:0 auto;padding:2rem 1.25rem 2rem}
-h1{font-size:1.6rem;line-height:1.3;margin:0 0 .4rem;font-weight:650}
-.lead{margin:0 0 1.5rem;color:var(--muted)}
-.ask{display:flex;gap:.6rem}
-.ask input{flex:1;min-width:0;padding:.8rem 1rem;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:10px}
-.ask input:focus,button:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-.primary{background:var(--accent);color:var(--accent-text);border:0;border-radius:10px;padding:.8rem 1.5rem;font:inherit;font-weight:600;cursor:pointer}
-.primary:disabled{opacity:.6;cursor:default}
-.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 0}
+select.ghost{background:var(--card)}
+main{flex:1;width:100%;max-width:820px;margin:0 auto;padding:1.5rem 1.25rem 1rem}
+h1{font-size:1.6rem;line-height:1.3;margin:1rem 0 .4rem;font-weight:650}
+.lead{margin:0 0 1.2rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
 .chip{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:999px;padding:.4rem .85rem;font:inherit;font-size:.85rem;cursor:pointer}
 .chip:hover{border-color:var(--accent);background:var(--accent-soft)}
-.label{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:2rem 0 .5rem}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.25rem;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+#thread{display:flex;flex-direction:column;gap:1.1rem}
+.msg.user{align-self:flex-end;max-width:85%;background:var(--accent);color:var(--accent-text);padding:.55rem .9rem;border-radius:14px 14px 4px 14px;white-space:pre-wrap;word-break:break-word}
+.msg.bot{width:100%}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .card p{margin:.2rem 0 .8rem}.card p:last-child{margin-bottom:0}
 .card ul,.card ol{margin:.2rem 0 .8rem;padding-left:1.3rem}
 .card.muted{background:var(--accent-soft)}
 .card.error{border-color:var(--err);color:var(--err)}
+.label{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:1rem 0 .4rem}
+.tablewrap{overflow-x:auto;margin:.4rem 0 .9rem}
+table{border-collapse:collapse;font-size:.9rem;width:100%}
+th,td{border:1px solid var(--border);padding:.4rem .6rem;text-align:left;vertical-align:top}
+th{background:var(--accent-soft)}
 .cite{display:inline-block;min-width:1.3em;padding:0 .3em;margin:0 .1em;border-radius:5px;background:var(--accent-soft);color:var(--accent);font-size:.75em;font-weight:700;text-align:center;text-decoration:none}
-details{background:var(--card);border:1px solid var(--border);border-radius:10px;margin:.5rem 0}
-summary{cursor:pointer;padding:.7rem 1rem;font-size:.9rem;font-weight:600}
+details{background:var(--card);border:1px solid var(--border);border-radius:10px;margin:.4rem 0}
+summary{cursor:pointer;padding:.65rem 1rem;font-size:.88rem;font-weight:600}
 .meta{font-weight:400;color:var(--muted)}
-.srcbody{padding:0 1rem 1rem;font-size:.9rem;color:var(--muted);white-space:pre-wrap}
+.srcbody{padding:0 1rem 1rem;font-size:.88rem;color:var(--muted)}
 .srcbody a{display:inline-block;margin-top:.7rem;color:var(--accent);font-weight:600}
 .loading{display:flex;align-items:center;gap:.7rem;color:var(--muted)}
 .spin{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;flex:none}
 @keyframes s{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
-footer{max-width:820px;margin:0 auto;padding:0 1.25rem 2.5rem;font-size:.8rem;color:var(--muted)}
+.composer{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);padding:.75rem 0 .6rem}
+.composer .in{max-width:820px;margin:0 auto;padding:0 1.25rem}
+.ask{display:flex;gap:.6rem}
+.ask input{flex:1;min-width:0;padding:.75rem 1rem;font:inherit;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:10px}
+.ask input:focus,button:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-text);border:0;border-radius:10px;padding:.75rem 1.4rem;font:inherit;font-weight:600;cursor:pointer}
+.primary:disabled{opacity:.6;cursor:default}
+.foot{font-size:.74rem;color:var(--muted);margin:.5rem 0 0}
 .sr{position:absolute;left:-9999px}
-@media(max-width:520px){.ask{flex-direction:column}.primary{width:100%}h1{font-size:1.35rem}}
+@media(max-width:520px){h1{font-size:1.35rem}.primary{padding:.75rem 1rem}}
 </style>
 </head>
 <body>
 <header>
   <div class="bar">
     <div class="brand"><b>CampusAsk</b><span>IIIT Delhi academic rules · unofficial</span></div>
-    <button id="theme" class="ghost" type="button">Dark mode</button>
+    <div class="tools">
+      <select id="prog" class="ghost" aria-label="Your program"></select>
+      <button id="newchat" class="ghost" type="button">New chat</button>
+      <button id="theme" class="ghost" type="button">Dark mode</button>
+    </div>
   </div>
 </header>
 
 <main>
-  <h1>Ask about IIIT Delhi academic rules</h1>
-  <p class="lead">Answers come only from official public documents, with the source page shown so you can verify them.</p>
-
-  <form id="form" class="ask" autocomplete="off">
-    <label for="q" class="sr">Your question</label>
-    <input id="q" maxlength="300" minlength="3" required placeholder="e.g. What is the attendance rule?">
-    <button id="go" class="primary" type="submit">Ask</button>
-  </form>
-  <div class="chips" id="chips" aria-label="Suggested questions"></div>
-
-  <div id="out" aria-live="polite"></div>
+  <div id="empty">
+    <h1>Ask about IIIT Delhi academic rules</h1>
+    <p class="lead">Answers come only from official public documents, with the source shown so you can verify them. Pick your program at the top for branch-specific answers, and ask follow-up questions like in a normal chat.</p>
+    <div class="chips" id="chips" aria-label="Suggested questions"></div>
+  </div>
+  <div id="thread" aria-live="polite"></div>
 </main>
 
-<footer>
-  Unofficial student project, not an official IIIT Delhi service. Answers are generated from public documents
-  and can be wrong or outdated. Always verify with the academic office.
-</footer>
+<div class="composer">
+  <div class="in">
+    <form id="form" class="ask" autocomplete="off">
+      <label for="q" class="sr">Your question</label>
+      <input id="q" maxlength="300" minlength="2" required placeholder="Ask a question, e.g. What is the attendance rule?">
+      <button id="go" class="primary" type="submit">Ask</button>
+    </form>
+    <p class="foot">Unofficial student project, not an official IIIT Delhi service. Answers are generated from public documents and can be wrong or outdated. Always verify with the academic office.</p>
+  </div>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
-const q = $('q'), go = $('go'), out = $('out');
+const q = $('q'), go = $('go'), thread = $('thread'), empty = $('empty');
 const NOT_FOUND = 'I could not find this in the documents.';
+const UNAVAILABLE = 'The AI summary is unavailable';
+const PROGRAMS = ['CSE', 'CSAI', 'CSAM', 'CSD', 'CSSS', 'CSB', 'ECE', 'EVE', 'CSECON'];
 const SUGGESTED = [
   'What is the attendance rule?',
   'What happens if I get two F grades in consecutive semesters?',
@@ -96,21 +108,26 @@ const SUGGESTED = [
   'What are the requirements for an Honors degree?',
   'Can I withdraw from a course after the mid-sem?'
 ];
+let messages = [], busy = false;
+const getS = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const setS = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
-/* ---------- theme ---------- */
+/* theme */
 const root = document.documentElement;
-function setTheme(t) {
-  root.setAttribute('data-theme', t);
-  try { localStorage.setItem('theme', t); } catch (e) {}
-  $('theme').textContent = t === 'dark' ? 'Light mode' : 'Dark mode';
-}
-let saved = null;
-try { saved = localStorage.getItem('theme'); } catch (e) {}
-setTheme(saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+function setTheme(t) { root.setAttribute('data-theme', t); setS('theme', t); $('theme').textContent = t === 'dark' ? 'Light mode' : 'Dark mode'; }
+setTheme(getS('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 $('theme').onclick = () => setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 
-/* ---------- safe rendering (no innerHTML) ---------- */
-function inline(parent, text) {
+/* program */
+const prog = $('prog');
+[['', 'Program: not set']].concat(PROGRAMS.map(p => [p, 'Program: ' + p])).forEach(([v, t]) => {
+  const o = document.createElement('option'); o.value = v; o.textContent = t; prog.appendChild(o);
+});
+prog.value = PROGRAMS.includes(getS('program')) ? getS('program') : '';
+prog.onchange = () => setS('program', prog.value);
+
+/* safe rendering (no innerHTML) */
+function inline(parent, text, idp) {
   const re = /\*\*(.+?)\*\*|\[(\d+(?:\s*,\s*\d+)*)\]/g;
   let last = 0, m;
   while ((m = re.exec(text))) {
@@ -120,10 +137,10 @@ function inline(parent, text) {
     } else {
       m[2].split(',').map(x => x.trim()).forEach(n => {
         const a = document.createElement('a');
-        a.className = 'cite'; a.href = '#src-' + n; a.textContent = n;
+        a.className = 'cite'; a.href = '#' + idp + n; a.textContent = n;
         a.onclick = e => {
           e.preventDefault();
-          const d = document.getElementById('src-' + n);
+          const d = document.getElementById(idp + n);
           if (d) { d.open = true; d.scrollIntoView({behavior: 'smooth', block: 'nearest'}); }
         };
         parent.append(a);
@@ -133,109 +150,154 @@ function inline(parent, text) {
   }
   if (last < text.length) parent.append(text.slice(last));
 }
-
-function block(container, text) {
-  let list = null;
-  text.split('\n').forEach(raw => {
-    const line = raw.trim();
-    if (!line) { list = null; return; }
-    const li = line.match(/^([*\-•]|\d+\.)\s+(.*)$/);
-    if (li) {
-      if (!list) {
-        list = document.createElement(/^\d/.test(li[1]) ? 'ol' : 'ul');
-        container.appendChild(list);
-      }
-      const item = document.createElement('li'); inline(item, li[2]); list.appendChild(item);
-    } else {
-      list = null;
-      const p = document.createElement('p'); inline(p, line); container.appendChild(p);
-    }
+const isRow = l => /^\|.*\|\s*$/.test(l.trim());
+function cellFill(el, text, idp) {
+  text.split(/<br\s*\/?>/i).forEach((part, i) => {
+    if (i) el.appendChild(document.createElement('br'));
+    inline(el, part.trim(), idp);
   });
 }
-
-function label(text) {
-  const l = document.createElement('div'); l.className = 'label'; l.textContent = text; out.appendChild(l);
-}
-
-function showError(msg) {
-  const c = document.createElement('div'); c.className = 'card error'; c.setAttribute('role', 'alert');
-  c.textContent = msg; out.appendChild(c);
-}
-
-function render(data) {
-  label('Answer');
-  const card = document.createElement('div');
-  if (data.answer.trim() === NOT_FOUND) {
-    card.className = 'card muted';
-    block(card, 'I could not find this in the indexed documents.');
-    block(card, 'Try rephrasing with the key terms (for example "internship eligibility" or "attendance rule"), or check with the academic office. Only some official documents are indexed so far.');
-    out.appendChild(card);
-    return;
-  }
-  card.className = 'card';
-  block(card, data.answer);
-  out.appendChild(card);
-
-  if (data.sources && data.sources.length) {
-    label('Sources');
-    data.sources.forEach(s => {
-      const d = document.createElement('details'); d.id = 'src-' + s.n;
-      const sm = document.createElement('summary');
-      sm.append('[' + s.n + '] ' + (s.title || s.source) + ' ');
-      const meta = document.createElement('span'); meta.className = 'meta';
-      meta.textContent = '· ' + [s.version, s.section, s.page ? 'page ' + s.page : ''].filter(Boolean).join(' · ');
-      sm.appendChild(meta);
-      d.appendChild(sm);
-      const body = document.createElement('div'); body.className = 'srcbody';
-      body.textContent = s.text.replace(/\n(?!\n)/g, ' ');
-      if (s.url) {
-        body.appendChild(document.createElement('br'));
-        const a = document.createElement('a');
-        a.href = s.url; a.target = '_blank'; a.rel = 'noopener';
-        a.textContent = s.page ? 'Open the official PDF at page ' + s.page : 'Open the official web page';
-        body.appendChild(a);
-      }
-      d.appendChild(body);
-      out.appendChild(d);
+function renderTable(container, rows, idp) {
+  const cells = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+  const sep = rows.findIndex(r => r.includes('-') && /^\|?[\s:\-|]+\|?$/.test(r.trim()));
+  const head = sep > 0 ? rows.slice(0, sep) : [];
+  const body = sep >= 0 ? rows.slice(sep + 1) : rows;
+  const wrap = document.createElement('div'); wrap.className = 'tablewrap';
+  const table = document.createElement('table');
+  if (head.length) {
+    const thead = document.createElement('thead');
+    head.forEach(r => {
+      const tr = document.createElement('tr');
+      cells(r).forEach(c => { const th = document.createElement('th'); cellFill(th, c, idp); tr.appendChild(th); });
+      thead.appendChild(tr);
     });
+    table.appendChild(thead);
+  }
+  const tbody = document.createElement('tbody');
+  body.forEach(r => {
+    const tr = document.createElement('tr');
+    cells(r).forEach(c => { const td = document.createElement('td'); cellFill(td, c, idp); tr.appendChild(td); });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody); wrap.appendChild(table); container.appendChild(wrap);
+}
+function block(container, text, idp) {
+  const lines = text.split('\n');
+  let list = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) { list = null; continue; }
+    if (isRow(line)) {
+      list = null;
+      const rows = [];
+      while (i < lines.length && isRow(lines[i])) { rows.push(lines[i].trim()); i++; }
+      i--; renderTable(container, rows, idp); continue;
+    }
+    const li = line.match(/^([*\-•]|\d+\.)\s+(.*)$/);
+    if (li) {
+      if (!list) { list = document.createElement(/^\d/.test(li[1]) ? 'ol' : 'ul'); container.appendChild(list); }
+      const item = document.createElement('li'); inline(item, li[2], idp); list.appendChild(item);
+    } else {
+      list = null;
+      const p = document.createElement('p'); inline(p, line.replace(/^#+\s*/, ''), idp); container.appendChild(p);
+    }
   }
 }
+function sourcesEl(sources, idp) {
+  const box = document.createElement('div');
+  const l = document.createElement('div'); l.className = 'label'; l.textContent = 'Sources'; box.appendChild(l);
+  sources.forEach(s => {
+    const d = document.createElement('details'); d.id = idp + s.n;
+    const sm = document.createElement('summary');
+    sm.append('[' + s.n + '] ' + (s.title || s.source) + ' ');
+    const meta = document.createElement('span'); meta.className = 'meta';
+    meta.textContent = '· ' + [s.version, s.section, s.page ? 'page ' + s.page : ''].filter(Boolean).join(' · ');
+    sm.appendChild(meta); d.appendChild(sm);
+    const body = document.createElement('div'); body.className = 'srcbody';
+    if (s.text.includes('\n|') || s.text.trim().startsWith('|')) block(body, s.text, idp + 's');
+    else { const p = document.createElement('div'); p.style.whiteSpace = 'pre-wrap'; p.textContent = s.text.replace(/\n(?!\n)/g, ' '); body.appendChild(p); }
+    if (s.url) {
+      const a = document.createElement('a'); a.href = s.url; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = s.page ? 'Open the official PDF at page ' + s.page : 'Open the official web page';
+      body.appendChild(a);
+    }
+    d.appendChild(body); box.appendChild(d);
+  });
+  return box;
+}
+function paint(m, i) {
+  const wrap = document.createElement('div'); wrap.className = 'msg ' + (m.role === 'user' ? 'user' : 'bot');
+  const idp = 'm' + i + '-';
+  if (m.role === 'user') wrap.textContent = m.text;
+  else {
+    const card = document.createElement('div'); card.className = 'card' + (m.notfound ? ' muted' : '');
+    if (m.notfound) {
+      block(card, 'I could not find this in the indexed documents.', idp);
+      block(card, 'Try rephrasing with the key terms, pick your program at the top, or check with the academic office. Only some official documents are indexed so far.', idp);
+    } else block(card, m.text, idp);
+    wrap.appendChild(card);
+    if (m.sources && m.sources.length) wrap.appendChild(sourcesEl(m.sources, idp));
+  }
+  thread.appendChild(wrap);
+  return wrap;
+}
+function persist() { setS('campusask-chat', JSON.stringify(messages.slice(-20))); }
 
-/* ---------- asking ---------- */
+/* asking */
 async function ask(question) {
   question = question.trim();
-  if (question.length < 3) return;
-  go.disabled = true; out.replaceChildren();
-  const load = document.createElement('div'); load.className = 'card loading';
+  if (question.length < 2 || busy) return;
+  busy = true; go.disabled = true; q.value = ''; empty.hidden = true;
+  const history = messages.filter(m => !m.notfound && !m.unavailable).slice(-6)
+    .map(m => ({role: m.role, text: m.text.slice(0, 800)}));
+  messages.push({role: 'user', text: question});
+  paint(messages[messages.length - 1], messages.length - 1);
+  const load = document.createElement('div'); load.className = 'msg bot';
+  const lc = document.createElement('div'); lc.className = 'card loading';
   const sp = document.createElement('div'); sp.className = 'spin';
   const lt = document.createElement('span'); lt.textContent = 'Searching the documents…';
-  load.append(sp, lt); out.appendChild(load);
+  lc.append(sp, lt); load.appendChild(lc); thread.appendChild(load);
+  load.scrollIntoView({behavior: 'smooth', block: 'end'});
   const t1 = setTimeout(() => lt.textContent = 'Preparing the answer…', 2500);
   const t2 = setTimeout(() => lt.textContent = 'The server may be waking up. This can take up to a minute.', 9000);
   try {
-    const r = await fetch('/ask', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({question})});
+    const r = await fetch('/ask', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question, history, branch: prog.value})});
     const data = await r.json();
-    out.replaceChildren();
+    load.remove();
     if (!r.ok) {
-      showError(typeof data.detail === 'string' ? data.detail : 'Please enter a question of 3 to 300 characters.');
-      return;
+      messages.pop(); thread.lastChild.remove();
+      const e = document.createElement('div'); e.className = 'msg bot';
+      const c = document.createElement('div'); c.className = 'card error';
+      c.textContent = typeof data.detail === 'string' ? data.detail : 'Please enter a question of 2 to 300 characters.';
+      e.appendChild(c); thread.appendChild(e); q.value = question;
+    } else {
+      const m = {role: 'assistant', text: data.answer, sources: data.sources,
+        notfound: data.answer.trim() === NOT_FOUND, unavailable: data.answer.startsWith(UNAVAILABLE)};
+      messages.push(m);
+      paint(m, messages.length - 1).scrollIntoView({behavior: 'smooth', block: 'start'});
+      persist();
     }
-    render(data);
   } catch (e) {
-    out.replaceChildren();
-    showError('Could not reach the server. Check your connection and try again.');
+    load.remove(); messages.pop(); thread.lastChild.remove();
+    const x = document.createElement('div'); x.className = 'msg bot';
+    const c = document.createElement('div'); c.className = 'card error';
+    c.textContent = 'Could not reach the server. Check your connection and try again.';
+    x.appendChild(c); thread.appendChild(x); q.value = question;
   } finally {
-    clearTimeout(t1); clearTimeout(t2); go.disabled = false;
+    clearTimeout(t1); clearTimeout(t2); busy = false; go.disabled = false; q.focus();
   }
 }
-
 $('form').addEventListener('submit', e => { e.preventDefault(); ask(q.value); });
+$('newchat').onclick = () => { messages = []; thread.replaceChildren(); empty.hidden = false; persist(); q.focus(); };
 SUGGESTED.forEach(t => {
-  const b = document.createElement('button');
-  b.type = 'button'; b.className = 'chip'; b.textContent = t;
-  b.onclick = () => { q.value = t; ask(t); };
-  $('chips').appendChild(b);
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t;
+  b.onclick = () => ask(t); $('chips').appendChild(b);
 });
+try {
+  const saved = JSON.parse(getS('campusask-chat') || '[]');
+  if (Array.isArray(saved) && saved.length) { messages = saved; empty.hidden = true; messages.forEach(paint); }
+} catch (e) {}
 </script>
 </body>
 </html>

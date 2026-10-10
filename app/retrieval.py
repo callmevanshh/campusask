@@ -14,7 +14,8 @@ DATA = Path("data/processed")
 _rows = [json.loads(l) for l in (DATA / "chunks_kept.jsonl").open(encoding="utf-8")]
 _stem = snowballstemmer.stemmer("english").stemWord
 def _doc_text(r):
-    return (r.get("section", "") + " " + r["text"]).strip()
+    t = " ".join(x for x in (r.get("section", ""), r.get("index_extra", ""), r["text"]) if x)
+    return t.replace("<br>", " ")
 
 STOP = {"the", "a", "an", "is", "are", "was", "were", "am", "of", "to", "in", "and", "or", "what",
         "if", "i", "my", "me", "we", "you", "your", "for", "on", "do", "does", "how", "can", "be",
@@ -77,23 +78,46 @@ if not LITE:
 
 BRANCHES = {"cse", "csai", "csam", "csd", "csss", "csb", "ece", "eve", "csecon"}
 BRANCH_W = float(os.getenv("BRANCH_W", "0.5"))
-_branch_of = [r["source"].split("-")[0].lower() if r["source"].split("-")[0].lower() in BRANCHES else None
-              for r in _rows]
+NEWEST_BOOST = float(os.getenv("NEWEST_BOOST", "1.4"))
+YEAR = re.compile(r"\b(?:19|20)\d\d\b|\bbatch\b", re.I)
+SWITCHING = re.compile(r"transfer|chang|switch|migrat", re.I)
+GENERIC = {_stem(w) for w in ("branch", "program", "programme", "department")}
+_branch_of = []
+for _r in _rows:
+    _b = _r["source"].split("-")[0].lower()
+    _branch_of.append(_b if _b in BRANCHES else None)
+_newest = np.array([1.0 if r.get("newest") else 0.0 for r in _rows])
 
 
-def _scope_weights(query):
-    mentioned = {w for w in re.findall(r"[a-z]+", query.lower()) if w in BRANCHES}
+def _named(query, branch=None):
+    named = {w for w in re.findall(r"[a-z]+", query.lower()) if w in BRANCHES}
+    if branch and branch.lower() in BRANCHES:
+        named.add(branch.lower())
+    return named
+
+
+def _scope_weights(query, branch=None):
+    mentioned = _named(query, branch)
     w = np.ones(len(_rows))
     for i, b in enumerate(_branch_of):
         if b is None:
             continue
-        w[i] = (1.0 if b in mentioned else BRANCH_W * 0.7) if mentioned else BRANCH_W
+        w[i] = (1.8 if b in mentioned else 0.15) if mentioned else BRANCH_W
+    if not YEAR.search(query):
+        w = w * np.where(_newest > 0, NEWEST_BOOST, 1.0)
     return w
 
 
-def search(query, k=4, mode="hybrid"):
-    w = _scope_weights(query)
-    kw = _bm25.get_scores(_tok_query(query))
+def _query_tokens(query, branch=None):
+    toks = _tok_query(query)
+    if _named(query, branch) and not SWITCHING.search(query):
+        toks = [t for t in toks if t not in GENERIC]
+    return toks
+
+
+def search(query, k=4, mode="hybrid", branch=None):
+    w = _scope_weights(query, branch)
+    kw = _bm25.get_scores(_query_tokens(query, branch))
     kw_rank = [int(i) for i in np.argsort(-(kw * w))[:20] if kw[i] > 0]
 
     if LITE or mode == "keyword":

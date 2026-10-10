@@ -1,6 +1,7 @@
 import time
 from collections import defaultdict, deque
 from pathlib import Path
+from typing import Literal
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
@@ -24,8 +25,15 @@ def too_many(ip: str, limit: int = 8, window: int = 60) -> bool:
     return False
 
 
+class Turn(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str = Field(max_length=800)
+
+
 class AskRequest(BaseModel):
-    question: str = Field(min_length=3, max_length=300)
+    question: str = Field(min_length=2, max_length=300)
+    history: list[Turn] = Field(default_factory=list, max_length=6)
+    branch: str = Field(default="", max_length=10)
 
 
 @app.api_route("/health", methods=["GET", "HEAD"])
@@ -39,7 +47,7 @@ def ask(req: AskRequest, request: Request):
     if too_many(ip):
         raise HTTPException(status_code=429, detail="Too many questions. Please wait a minute.")
     try:
-        return answer(req.question.strip())
+        return answer(req.question.strip(), [t.model_dump() for t in req.history], req.branch)
     except httpx.HTTPError as e:
         body = getattr(getattr(e, "response", None), "text", "")[:500]
         print("LLM ERROR:", repr(e), body)
