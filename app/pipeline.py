@@ -15,11 +15,25 @@ _cache = {}
 GREET = {"hi", "hii", "hiii", "hello", "helo", "hey", "heya", "hola", "yo", "namaste", "hi hello", "hello hi"}
 THANKS = {"thanks", "thank you", "thx", "ty", "thanks a lot", "thank you so much", "shukriya", "dhanyavad"}
 ACK = {"ok", "okay", "cool", "nice", "great", "got it", "acha", "accha", "theek hai", "thik hai"}
-ABOUT = {"who are you", "what are you", "what can you do", "help", "how do you work", "what do you do"}
+ABOUT = {"who are you", "what are you", "what can you do", "help", "how do you work", "what do you do",
+         "can u answer me", "can you answer me", "are you", "hello are you", "hi are you", "test", "testing"}
 
+BRANCH_RE = re.compile(r"\b(csecon|csai|csam|csss|cse|csd|csb|ece|eve)\b", re.I)
+TOPIC_STOP = {"for", "in", "of", "the", "i", "am", "im", "m", "from", "branch", "program", "programme", "my",
+              "is", "its", "it", "a", "an", "and", "what", "about", "how", "bro", "bhai", "please", "pls",
+              "tell", "me", "only", "just", "also"}
+ORD = r"(?:first|second|third|fourth|fifth|sixth|seventh|eighth|1st|2nd|3rd|4th|5th|6th|7th|8th|[1-8])"
+NEEDS_BRANCH = re.compile(
+    rf"\b{ORD}\s*sem(?:ester)?s?\b.*\b(?:courses?|subjects?)\b"
+    rf"|\b(?:courses?|subjects?)\b.*\b{ORD}\s*sem(?:ester)?s?\b"
+    r"|\bsem(?:ester)?s?[\s\-]*wise\b|\bcurriculum\b|\bprogram structure\b|\bsyllabus\b", re.I)
 FOLLOWUP = re.compile(
     r"\b(?:it|its|that|this|those|these|they|them|there|same|above|earlier|also|iska|uska|isme|usme|aur)\b"
-    r"|^\s*(?:and|then|what about|how about|just|only|elaborate|simplify|summari[sz]e|shorter|in detail|in a table|as a table|more detail)\b", re.I)
+    r"|^\s*(?:and|then|what about|how about|just|only|elaborate|simplify|summari[sz]e|shorter|in detail|in a table|as a table|more detail)\b",
+    re.I)
+
+CLARIFY = ("Which program are you in? Course lists differ by program (CSE, CSAI, CSAM, CSD, CSSS, CSB, ECE, EVE, CSECON). "
+           "Pick it from the dropdown at the top, or just tell me, for example: \"for CSB\".")
 
 
 def _smalltalk(q):
@@ -35,9 +49,44 @@ def _smalltalk(q):
         return "Okay. Ask me anything else about the academic rules whenever you like."
     if t in ABOUT:
         return ("I'm CampusAsk, an unofficial assistant for IIIT Delhi academic rules. I search the official "
-                "regulations and show the exact source so you can verify every answer. I can't answer things "
-                "these documents don't cover.")
+                "regulations and show the exact source so you can verify every answer. Ask me a question about "
+                "attendance, grading, leave, internships or your program's courses.")
     return None
+
+
+def _branch_in(text):
+    found = BRANCH_RE.findall(text or "")
+    return found[-1].lower() if found else ""
+
+
+def _branch_from_chat(history):
+    for t in reversed(history or []):
+        if t["role"] == "user":
+            b = _branch_in(t["text"])
+            if b:
+                return b
+    return ""
+
+
+def _topic(history):
+    """Last user question that carries a real topic (not just a branch name like 'for CSB'),
+    with branch names removed so an old branch cannot leak into a new question."""
+    for t in reversed(history or []):
+        if t["role"] != "user":
+            continue
+        stripped = " ".join(BRANCH_RE.sub(" ", t["text"]).split())
+        words = [w for w in re.findall(r"[a-z]+", stripped.lower()) if w not in TOPIC_STOP]
+        if len(words) >= 2:
+            return stripped
+    return ""
+
+
+def _is_followup(q, history):
+    if not history:
+        return False
+    if FOLLOWUP.search(q):
+        return True
+    return len(q.split()) <= 5 and bool(BRANCH_RE.search(q))
 
 
 def _relevant(chunks):
@@ -65,19 +114,21 @@ def answer(question: str, history=None, branch: str = "") -> dict:
     if small:
         return {"answer": small, "sources": []}
 
-    branch = (branch or "").strip().lower()
-    use_hist = bool(history) and bool(FOLLOWUP.search(question))
-    search_q = question
-    if use_hist:
-        last_user = next((t["text"] for t in reversed(history) if t["role"] == "user"), "")
-        search_q = f"{last_user} {question}".strip()
+    # priority: branch named in this question > dropdown > branch mentioned earlier in the chat
+    branch = _branch_in(question) or (branch or "").strip().lower() or _branch_from_chat(history)
+    if not branch and NEEDS_BRANCH.search(question):
+        return {"answer": CLARIFY, "sources": []}
+
+    use_hist = _is_followup(question, history)
+    topic = _topic(history) if use_hist else ""
+    search_q = f"{topic} {question}".strip() if topic else question
 
     key = branch + "|" + " ".join(question.lower().split())
     if not use_hist and key in _cache:
         return _cache[key]
 
     chunks = search(search_q, k=6, branch=branch)
-    print(f"[ask] q={question!r} branch={branch!r} followup={use_hist} "
+    print(f"[ask] q={question!r} resolved={search_q!r} branch={branch!r} followup={use_hist} "
           f"src={[c['source'].split('-')[0] + ':p' + str(c['page']) for c in chunks]} "
           f"kw={[round(c['kw'], 1) for c in chunks]}")
     if not chunks or not _relevant(chunks):
@@ -85,7 +136,7 @@ def answer(question: str, history=None, branch: str = "") -> dict:
         return {"answer": REFUSAL, "sources": []}
 
     try:
-        text = generate(question, chunks, history if use_hist else None, branch)
+        text = generate(search_q, chunks, history if use_hist else None, branch)
     except httpx.HTTPError as e:
         print("LLM ERROR:", repr(e))
         return {
