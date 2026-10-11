@@ -21,7 +21,12 @@ ABOUT = {"who are you", "what are you", "what can you do", "help", "how do you w
 BRANCH_RE = re.compile(r"\b(csecon|csai|csam|csss|cse|csd|csb|ece|eve)\b", re.I)
 TOPIC_STOP = {"for", "in", "of", "the", "i", "am", "im", "m", "from", "branch", "program", "programme", "my",
               "is", "its", "it", "a", "an", "and", "what", "about", "how", "bro", "bhai", "please", "pls",
-              "tell", "me", "only", "just", "also"}
+              "tell", "me", "only", "just", "also", "are", "do", "does", "can", "u", "you", "to", "on", "at",
+              "with", "make", "show", "give", "create", "now", "then", "ok", "okay"}
+FORMAT_ONLY = {"table", "tabular", "list", "format", "bullet", "bullets", "points", "detail", "detailed",
+               "short", "brief", "summary", "summarize", "summarise", "explain", "again", "more", "simple",
+               "simplify", "shorter", "elaborate", "clearly", "properly"}
+NOT_TOPIC = TOPIC_STOP | FORMAT_ONLY
 ORD = r"(?:first|second|third|fourth|fifth|sixth|seventh|eighth|1st|2nd|3rd|4th|5th|6th|7th|8th|[1-8])"
 NEEDS_BRANCH = re.compile(
     rf"\b{ORD}\s*sem(?:ester)?s?\b.*\b(?:courses?|subjects?)\b"
@@ -68,14 +73,18 @@ def _branch_from_chat(history):
     return ""
 
 
+def _topic_words(text):
+    stripped = " ".join(BRANCH_RE.sub(" ", text or "").split())
+    return stripped, [w for w in re.findall(r"[a-z]+", stripped.lower()) if w not in NOT_TOPIC]
+
+
 def _topic(history):
-    """Last user question that carries a real topic (not just a branch name like 'for CSB'),
-    with branch names removed so an old branch cannot leak into a new question."""
+    """Last user question that carries a real topic, with branch names removed so an old
+    branch cannot leak into a new question."""
     for t in reversed(history or []):
         if t["role"] != "user":
             continue
-        stripped = " ".join(BRANCH_RE.sub(" ", t["text"]).split())
-        words = [w for w in re.findall(r"[a-z]+", stripped.lower()) if w not in TOPIC_STOP]
+        stripped, words = _topic_words(t["text"])
         if len(words) >= 2:
             return stripped
     return ""
@@ -86,7 +95,24 @@ def _is_followup(q, history):
         return False
     if FOLLOWUP.search(q):
         return True
-    return len(q.split()) <= 5 and bool(BRANCH_RE.search(q))
+    _, words = _topic_words(q)
+    return len(words) == 0 and len(q.split()) <= 6  # "for cse", "CSB", "table ?", "make a table"
+
+
+def resolve(question, history=None, branch=""):
+    """Decide what to search for. Returns {'reply': text} for small talk / clarification,
+    otherwise {'branch', 'search_q', 'use_hist'}."""
+    small = _smalltalk(question)
+    if small:
+        return {"reply": small}
+    # priority: branch named in this question > dropdown > branch mentioned earlier in the chat
+    branch = _branch_in(question) or (branch or "").strip().lower() or _branch_from_chat(history)
+    if not branch and NEEDS_BRANCH.search(question):
+        return {"reply": CLARIFY}
+    use_hist = _is_followup(question, history)
+    topic = _topic(history) if use_hist else ""
+    search_q = f"{topic} {question}".strip() if topic else question
+    return {"branch": branch, "search_q": search_q, "use_hist": use_hist}
 
 
 def _relevant(chunks):
@@ -110,18 +136,10 @@ def _passages(chunks):
 
 
 def answer(question: str, history=None, branch: str = "") -> dict:
-    small = _smalltalk(question)
-    if small:
-        return {"answer": small, "sources": []}
-
-    # priority: branch named in this question > dropdown > branch mentioned earlier in the chat
-    branch = _branch_in(question) or (branch or "").strip().lower() or _branch_from_chat(history)
-    if not branch and NEEDS_BRANCH.search(question):
-        return {"answer": CLARIFY, "sources": []}
-
-    use_hist = _is_followup(question, history)
-    topic = _topic(history) if use_hist else ""
-    search_q = f"{topic} {question}".strip() if topic else question
+    r = resolve(question, history, branch)
+    if "reply" in r:
+        return {"answer": r["reply"], "sources": []}
+    branch, search_q, use_hist = r["branch"], r["search_q"], r["use_hist"]
 
     key = branch + "|" + " ".join(question.lower().split())
     if not use_hist and key in _cache:

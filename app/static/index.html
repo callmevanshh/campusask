@@ -150,7 +150,8 @@ function inline(parent, text, idp) {
   }
   if (last < text.length) parent.append(text.slice(last));
 }
-const isRow = l => /^\|.*\|\s*$/.test(l.trim());
+const CITE_TAIL = /\s*(\[\d+(?:\s*,\s*\d+)*\]\s*)+$/;
+const isRow = l => /^\|.*\|\s*(\[\d+(?:\s*,\s*\d+)*\]\s*)*$/.test(l.trim());
 function cellFill(el, text, idp) {
   text.split(/<br\s*\/?>/i).forEach((part, i) => {
     if (i) el.appendChild(document.createElement('br'));
@@ -190,8 +191,18 @@ function block(container, text, idp) {
     if (isRow(line)) {
       list = null;
       const rows = [];
-      while (i < lines.length && isRow(lines[i])) { rows.push(lines[i].trim()); i++; }
-      i--; renderTable(container, rows, idp); continue;
+      let tail = '';
+      while (i < lines.length && isRow(lines[i])) {
+        const raw = lines[i].trim();
+        const m = raw.match(CITE_TAIL);
+        if (m) { tail += ' ' + m[0].trim(); rows.push(raw.slice(0, raw.length - m[0].length).trim()); }
+        else rows.push(raw);
+        i++;
+      }
+      i--;
+      renderTable(container, rows, idp);
+      if (tail.trim()) { const p = document.createElement('p'); inline(p, tail.trim(), idp); container.appendChild(p); }
+      continue;
     }
     const li = line.match(/^([*\-•]|\d+\.)\s+(.*)$/);
     if (li) {
@@ -248,7 +259,7 @@ async function ask(question) {
   question = question.trim();
   if (question.length < 2 || busy) return;
   busy = true; go.disabled = true; q.value = ''; empty.hidden = true;
-  const history = messages.filter(m => !m.notfound && !m.unavailable).slice(-6)
+  const history = messages.filter(m => !m.notfound && !m.unavailable).slice(-12)
     .map(m => ({role: m.role, text: m.text.slice(0, 800)}));
   messages.push({role: 'user', text: question});
   paint(messages[messages.length - 1], messages.length - 1);

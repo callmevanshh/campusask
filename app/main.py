@@ -32,7 +32,7 @@ class Turn(BaseModel):
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=2, max_length=300)
-    history: list[Turn] = Field(default_factory=list, max_length=6)
+    history: list[Turn] = Field(default_factory=list, max_length=14)
     branch: str = Field(default="", max_length=10)
 
 

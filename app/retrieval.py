@@ -29,10 +29,15 @@ EXPAND = {"backlog": ["fail", "repeat"], "backlogs": ["fail", "repeat"],
           "criteria": ["requirements"], "criterion": ["requirements"],
           "long": ["duration"], "length": ["duration"]}
 
+_ORD = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"]
+ORD_DIGIT = {w: str(i + 1) for i, w in enumerate(_ORD)}
+
+
 def _normalize(text):
     text = text.lower()
     text = re.sub(r"\bb\.?\s?tech\b", "btech", text)
     text = re.sub(r"\bm\.?\s?tech\b", "mtech", text)
+    text = re.sub(r"\b([1-8])(?:st|nd|rd|th)\b", lambda m: _ORD[int(m.group(1)) - 1], text)
     return re.sub(r"(?<=[a-z])\.(?=[a-z])", "", text)
 
 
@@ -59,10 +64,14 @@ def _tok_doc(text):
 
 
 def _tok_query(text):
+    words = _words(text)
+    has_sem = any(w in ("semester", "semesters", "sem", "sems") for w in words)
     out = []
-    for w in _words(text):
+    for w in words:
         w = SYNONYMS.get(w, w)
         out.extend(EXPAND.get(w, []))
+        if has_sem and w in ORD_DIGIT:
+            out.append(ORD_DIGIT[w])  # "first semester" also matches tables headed "Semester 1"
         out.append(_fix(w))
     return [_stem(w) for w in out]
 
