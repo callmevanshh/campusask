@@ -28,7 +28,7 @@ for path in SETS:
     h1 = h3 = 0
     misses = []
     for q in ans:
-        res = search(q["q"], k=3, mode="keyword", branch=q.get("branch"))
+        res = search(q["q"], k=3, mode="keyword", branch=q.get("branch"), expand=False)
         h1 += bool(res) and is_hit(q, res[0])
         ok = any(is_hit(q, c) for c in res)
         h3 += ok

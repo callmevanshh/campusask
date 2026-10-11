@@ -40,4 +40,9 @@ fails += run("topic change and follow-up", [
     ("CSE 1st semester courses", {"followup": False, "branch": "cse", "not": ["attendance"]}),
     ("who won the world cup", {"followup": False, "not": ["cse"]}),
 ])
+fails += run("personal statements", [
+    ("i have cgpa of 4.95 in 7th sem", {"reply": "What would you like to know"}),
+    ("i have completed 116 credits till 6th sem", {"reply": "What would you like to know"}),
+    ("will i get honors?", {"followup": False}),
+])
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")

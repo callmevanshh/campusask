@@ -27,7 +27,8 @@ SYNONYMS = {"sem": "semester", "sems": "semester", "honour": "honor", "honours":
             "intern": "internship", "interns": "internship", "gpa": "cgpa", "uni": "university"}
 EXPAND = {"backlog": ["fail", "repeat"], "backlogs": ["fail", "repeat"],
           "criteria": ["requirements"], "criterion": ["requirements"],
-          "long": ["duration"], "length": ["duration"]}
+          "long": ["duration"], "length": ["duration"]
+          }
 
 _ORD = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"]
 ORD_DIGIT = {w: str(i + 1) for i, w in enumerate(_ORD)}
@@ -124,13 +125,45 @@ def _query_tokens(query, branch=None):
     return toks
 
 
-def search(query, k=4, mode="hybrid", branch=None):
+MAX_EXTRA = 6
+
+
+def _first_sec(r):
+    return (r.get("section") or "").split(" / ")[0]
+
+
+def _last_sec(r):
+    return (r.get("section") or "").split(" / ")[-1]
+
+
+def _with_neighbours(order, k):
+    """A rule often continues in the next chunk. If a retrieved chunk ends inside a section that the
+    next chunk continues, hand the model that next chunk as well."""
+    out = list(order[:k])
+    extra = 0
+    for i in list(out):
+        j = i + 1
+        if extra >= MAX_EXTRA or j >= len(_rows) or j in out:
+            continue
+        a, b = _rows[i], _rows[j]
+        if a["source"] != b["source"] or a.get("table") or b.get("table"):
+            continue
+        if b["page"] - a["page"] not in (0, 1):
+            continue
+        if _last_sec(a) and _last_sec(a) == _first_sec(b):
+            out.append(j)
+            extra += 1
+    return out
+
+
+def search(query, k=4, mode="hybrid", branch=None, expand=True):
     w = _scope_weights(query, branch)
     kw = _bm25.get_scores(_query_tokens(query, branch))
     kw_rank = [int(i) for i in np.argsort(-(kw * w))[:20] if kw[i] > 0]
 
     if LITE or mode == "keyword":
-        return [{**_rows[i], "sem": 0.0, "kw": float(kw[i])} for i in kw_rank[:k]]
+        order = _with_neighbours(kw_rank, k) if expand else kw_rank[:k]
+        return [{**_rows[i], "sem": 0.0, "kw": float(kw[i])} for i in order]
 
     qv = _model.encode([query], normalize_embeddings=True)[0]
     sem = _vecs @ qv
@@ -143,6 +176,7 @@ def search(query, k=4, mode="hybrid", branch=None):
         for ranking in (sem_rank, kw_rank):
             for pos, i in enumerate(ranking):
                 fused[i] = fused.get(i, 0) + 1 / (60 + pos + 1)
-        order = sorted(fused, key=fused.get, reverse=True)[:k]
+        ranked = sorted(fused, key=fused.get, reverse=True)
+        order = _with_neighbours(ranked, k) if expand else ranked[:k]
 
     return [{**_rows[i], "sem": float(sem[i]), "kw": float(kw[i])} for i in order]

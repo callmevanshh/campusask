@@ -37,6 +37,15 @@ FOLLOWUP = re.compile(
     r"|^\s*(?:and|then|what about|how about|just|only|elaborate|simplify|summari[sz]e|shorter|in detail|in a table|as a table|more detail)\b",
     re.I)
 
+# the student talks about themselves
+PERSONAL = re.compile(r"\b(?:i|i'm|im|my|mera|meri|mere|maine)\b", re.I)
+STATEMENT = re.compile(r"^\s*(?:i|i'm|im|my|mera|meri|maine|main)\b", re.I)
+ASKING = re.compile(
+    r"\?|\b(?:what|how|can|could|will|would|should|which|when|where|why|who|kya|kitna|kitne|kab|kaise|kyun|"
+    r"batao|tell|explain|list|show|eligible|allowed)\b", re.I)
+
+NOTED = ("Noted. What would you like to know? For example: whether your credits or CGPA meet a requirement, "
+         "how much course load you can take, or Honors/Minor eligibility.")
 CLARIFY = ("Which program are you in? Course lists differ by program (CSE, CSAI, CSAM, CSD, CSSS, CSB, ECE, EVE, CSECON). "
            "Pick it from the dropdown at the top, or just tell me, for example: \"for CSB\".")
 
@@ -59,6 +68,11 @@ def _smalltalk(q):
     return None
 
 
+def _statement_only(q):
+    """'i have cgpa of 4.95 in 7th sem': facts about the student but no question."""
+    return bool(STATEMENT.match(q)) and not ASKING.search(q) and bool(re.search(r"\d", q))
+
+
 def _branch_in(text):
     found = BRANCH_RE.findall(text or "")
     return found[-1].lower() if found else ""
@@ -79,8 +93,6 @@ def _topic_words(text):
 
 
 def _topic(history):
-    """Last user question that carries a real topic, with branch names removed so an old
-    branch cannot leak into a new question."""
     for t in reversed(history or []):
         if t["role"] != "user":
             continue
@@ -100,19 +112,19 @@ def _is_followup(q, history):
 
 
 def resolve(question, history=None, branch=""):
-    """Decide what to search for. Returns {'reply': text} for small talk / clarification,
-    otherwise {'branch', 'search_q', 'use_hist'}."""
     small = _smalltalk(question)
     if small:
         return {"reply": small}
-    # priority: branch named in this question > dropdown > branch mentioned earlier in the chat
+    if _statement_only(question):
+        return {"reply": NOTED}
     branch = _branch_in(question) or (branch or "").strip().lower() or _branch_from_chat(history)
     if not branch and NEEDS_BRANCH.search(question):
         return {"reply": CLARIFY}
     use_hist = _is_followup(question, history)
     topic = _topic(history) if use_hist else ""
     search_q = f"{topic} {question}".strip() if topic else question
-    return {"branch": branch, "search_q": search_q, "use_hist": use_hist}
+    return {"branch": branch, "search_q": search_q, "use_hist": use_hist,
+            "personal": bool(PERSONAL.search(question))}
 
 
 def _relevant(chunks):
@@ -139,14 +151,15 @@ def answer(question: str, history=None, branch: str = "") -> dict:
     r = resolve(question, history, branch)
     if "reply" in r:
         return {"answer": r["reply"], "sources": []}
-    branch, search_q, use_hist = r["branch"], r["search_q"], r["use_hist"]
+    branch, search_q, use_hist, personal = r["branch"], r["search_q"], r["use_hist"], r["personal"]
+    with_hist = use_hist or (personal and bool(history))
 
     key = branch + "|" + " ".join(question.lower().split())
-    if not use_hist and key in _cache:
+    if not with_hist and key in _cache:
         return _cache[key]
 
-    chunks = search(search_q, k=6, branch=branch)
-    print(f"[ask] q={question!r} resolved={search_q!r} branch={branch!r} followup={use_hist} "
+    chunks = search(search_q, k=8 if personal else 6, branch=branch)
+    print(f"[ask] q={question!r} resolved={search_q!r} branch={branch!r} followup={use_hist} personal={personal} "
           f"src={[c['source'].split('-')[0] + ':p' + str(c['page']) for c in chunks]} "
           f"kw={[round(c['kw'], 1) for c in chunks]}")
     if not chunks or not _relevant(chunks):
@@ -154,7 +167,7 @@ def answer(question: str, history=None, branch: str = "") -> dict:
         return {"answer": REFUSAL, "sources": []}
 
     try:
-        text = generate(search_q, chunks, history if use_hist else None, branch)
+        text = generate(search_q, chunks, history if with_hist else None, branch)
     except httpx.HTTPError as e:
         print("LLM ERROR:", repr(e))
         return {
@@ -162,6 +175,9 @@ def answer(question: str, history=None, branch: str = "") -> dict:
                       "Here are the most relevant passages from the official documents:",
             "sources": _passages(chunks),
         }
+
+    if text.strip().upper().startswith("CLARIFY:"):
+        return {"answer": text.strip()[8:].strip(), "sources": []}
 
     cited = {int(n) for grp in re.findall(r"\[([\d,\s]+)\]", text) for n in re.findall(r"\d+", grp)}
     if text.strip().startswith(REFUSAL):
@@ -173,7 +189,7 @@ def answer(question: str, history=None, branch: str = "") -> dict:
     else:
         result = {"answer": text, "sources": [s for s in _passages(chunks) if s["n"] in cited]}
 
-    if not use_hist:
+    if not with_hist:
         if len(_cache) > 500:
             _cache.clear()
         _cache[key] = result

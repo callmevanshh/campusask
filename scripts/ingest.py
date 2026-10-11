@@ -45,13 +45,14 @@ def chunk_text(text, size=CHUNK_SIZE, overlap=OVERLAP):
     return chunks
 
 
-def last_heading(chunk, current, kind="pdf"):
+def headings_in(chunk, kind="pdf"):
+    out = []
     for line in chunk.split("\n"):
         line = line.strip()
         m = HEADING.match(line)
         if m:
             title = re.sub(r"\s*\([^)]*$", "", m.group(2)).strip()
-            current = f"{m.group(1)} {title}"
+            out.append(f"{m.group(1)} {title}")
             continue
         m = MD_HEADING.match(line)
         if m:
@@ -59,9 +60,8 @@ def last_heading(chunk, current, kind="pdf"):
             # In PDFs a leading '#' is usually a footnote marker, so only accept '#' lines that
             # start with a section number there; web .txt files accept any '#' heading.
             if kind == "web" or re.match(r"\d", text):
-                current = text
-    return current
-
+                out.append(text)
+    return out
 
 def parse_pages(spec):
     pages = set()
@@ -189,8 +189,12 @@ def main():
                 base = {"source": row["file"], "title": row["title"], "version": row["version"],
                         "url": row["url"], "kind": kind, "page": page_num}
                 for i, c in enumerate(chunk_text(text) if len(text) >= 30 else []):
-                    section = last_heading(c, section, kind)
-                    recs.append({**base, "id": f"{path.stem}-p{page_num}-c{i}", "section": section, "text": c})
+                    start = section
+                    found = headings_in(c, kind)
+                    if found:
+                        section = found[-1]
+                    label = " / ".join(dict.fromkeys(x for x in [start] + found if x))
+                    recs.append({**base, "id": f"{path.stem}-p{page_num}-c{i}", "section": label, "text": c})
                 for j, md in enumerate(tables):
                     ntables += 1
                     year = batch_start(md)
