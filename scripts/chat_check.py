@@ -45,4 +45,12 @@ fails += run("personal statements", [
     ("i have completed 116 credits till 6th sem", {"reply": "What would you like to know"}),
     ("will i get honors?", {"followup": False}),
 ])
+fails += run("long self-contained questions", [
+    ("If I have completed 160 total credits by the end of 8th sem, but 8 of those credits were 'F' or 'E' grades in core courses, can the 8-credit worst grade exclusion rule automatically drop them so I can graduate, or must I repeat those exact courses?",
+     {"followup": False}),
+    ("If I took a semester leave in my 4th semester due to medical reasons and cleared 2 SG credits during summer term, does that semester leave count towards the 8-semester minimum duration requirement for B.Tech completion?",
+     {"followup": False, "not": ["160 total credits"]}),
+    ("I did a branch transfer from CSE to CSB after my 2nd semester. Do the extra discipline credits I completed in 1st year count towards the 12 additional discipline credits required for Graduating with Honors in CSB, or do they only count as open electives?",
+     {"followup": False, "branch": "csb", "not": ["semester leave"]}),
+])
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")

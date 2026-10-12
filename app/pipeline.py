@@ -47,7 +47,9 @@ ASKING = re.compile(
 NOTED = ("Noted. What would you like to know? For example: whether your credits or CGPA meet a requirement, "
          "how much course load you can take, or Honors/Minor eligibility.")
 CLARIFY = ("Which program are you in? Course lists differ by program (CSE, CSAI, CSAM, CSD, CSSS, CSB, ECE, EVE, CSECON). "
-           "Pick it from the dropdown at the top, or just tell me, for example: \"for CSB\".")
+           "Just tell me, for example: \"for CSB\".")
+LEAK = re.compile(r"do not assume that credits|unless the sources say so|never carry over|answer only the new question|"
+                  r"for each semester in the student's plan|double-check the comparison", re.I)
 
 
 def _smalltalk(q):
@@ -56,7 +58,7 @@ def _smalltalk(q):
     if t in GREET or re.fullmatch(r"good (morning|afternoon|evening)", t):
         return ("Hi! I answer questions about IIIT Delhi academic rules using the official documents. "
                 "Try attendance, grading, semester leave, internships, or your branch's courses. "
-                "Pick your program at the top for branch-specific answers.")
+                "Mention your program (for example CSB) for branch-specific answers.")
     if t in THANKS:
         return "You're welcome! Ask me anything else about the academic rules."
     if t in ACK:
@@ -105,11 +107,12 @@ def _topic(history):
 def _is_followup(q, history):
     if not history:
         return False
+    _, words = _topic_words(q)
+    if len(words) >= 5:
+        return False  # a full question with its own topic is never merged with the previous one
     if FOLLOWUP.search(q):
         return True
-    _, words = _topic_words(q)
     return len(words) == 0 and len(q.split()) <= 6  # "for cse", "CSB", "table ?", "make a table"
-
 
 def resolve(question, history=None, branch=""):
     small = _smalltalk(question)
@@ -118,7 +121,7 @@ def resolve(question, history=None, branch=""):
     if _statement_only(question):
         return {"reply": NOTED}
     branch = _branch_in(question) or (branch or "").strip().lower() or _branch_from_chat(history)
-    if not branch and NEEDS_BRANCH.search(question):
+    if not branch and len(question.split()) <= 14 and NEEDS_BRANCH.search(question):
         return {"reply": CLARIFY}
     use_hist = _is_followup(question, history)
     topic = _topic(history) if use_hist else ""
@@ -146,6 +149,9 @@ def _passages(chunks):
         })
     return out
 
+def _scrub(text):
+    """Drop any line in which the model repeated one of its own instructions."""
+    return "\n".join(ln for ln in text.split("\n") if not LEAK.search(ln)).strip()
 
 def answer(question: str, history=None, branch: str = "") -> dict:
     r = resolve(question, history, branch)
@@ -166,8 +172,12 @@ def answer(question: str, history=None, branch: str = "") -> dict:
         print("[ask] refused by relevance gate")
         return {"answer": REFUSAL, "sources": []}
 
+    hist = None
+    if with_hist:
+        # follow-ups need the earlier answers; a fresh personal question only needs the facts the student stated
+        hist = history if use_hist else [t for t in history if t["role"] == "user"][-6:]
     try:
-        text = generate(search_q, chunks, history if with_hist else None, branch)
+        text = generate(search_q, chunks, hist, branch)
     except httpx.HTTPError as e:
         print("LLM ERROR:", repr(e))
         return {
@@ -178,7 +188,8 @@ def answer(question: str, history=None, branch: str = "") -> dict:
 
     if text.strip().upper().startswith("CLARIFY:"):
         return {"answer": text.strip()[8:].strip(), "sources": []}
-
+    
+    text = _scrub(text)
     cited = {int(n) for grp in re.findall(r"\[([\d,\s]+)\]", text) for n in re.findall(r"\d+", grp)}
     if text.strip().startswith(REFUSAL):
         print("[ask] refused by LLM")

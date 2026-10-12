@@ -29,6 +29,11 @@ SYSTEM = (
     "list the conditions you cannot check (core courses, SSH credits, pending or failed grades, CGPA conditions), "
     "and tell them to confirm with the academic office or their degree audit on the official portal. "
     "If the numbers are ambiguous or contradict each other, ask instead of assuming. "
+    "Answer only the new question; never carry over answers to earlier questions. "
+    "When comparing a number with a requirement, write both numbers, say whether one is less than, equal to or greater than the other, and double-check the comparison before concluding. "
+    "When comparing the student's credits with the degree minimum, count only credits from courses the student passed (F and X are fail grades in the sources). "
+    "The rule that ignores the worst grades when extra credits are done only changes how CGPA is computed; it does not turn failed courses into earned credits. "
+    "For each semester in the student's plan, compare its credit load with the normal load and the overload limits in the sources and say whether it is an overload. "
     "When you must ask the student something, start the reply with 'CLARIFY:' followed by only the question, with no citations. "
     "Match the format to the question. For a simple factual question, answer in 1 to 3 sentences. "
     "For a rule with several conditions, use short bullet points. "
@@ -53,8 +58,9 @@ def _history_text(history):
         who = "Student" if t["role"] == "user" else "CampusAsk"
         text = re.sub(r"\[[\d,\s]+\]", "", t["text"])[:400]
         lines.append(f"{who}: {text}")
-    return ("CONVERSATION SO FAR (only to understand what the new question refers to; "
-            "facts must come from SOURCES):\n" + "\n".join(lines) + "\n\n")
+    return ("EARLIER MESSAGES (use ONLY to learn facts the student stated about themselves and to resolve what the new "
+            "question refers to. Do NOT answer, repeat or revisit any earlier question; answer ONLY the NEW QUESTION "
+            "below. Rules must come from SOURCES):\n" + "\n".join(lines) + "\n\n")
 
 
 def generate(question, chunks, history=None, branch=""):

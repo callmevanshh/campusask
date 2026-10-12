@@ -67,7 +67,6 @@ summary{cursor:pointer;padding:.65rem 1rem;font-size:.88rem;font-weight:600}
   <div class="bar">
     <div class="brand"><b>CampusAsk</b><span>IIIT Delhi academic rules · unofficial</span></div>
     <div class="tools">
-      <select id="prog" class="ghost" aria-label="Your program"></select>
       <button id="newchat" class="ghost" type="button">New chat</button>
       <button id="theme" class="ghost" type="button">Dark mode</button>
     </div>
@@ -77,7 +76,7 @@ summary{cursor:pointer;padding:.65rem 1rem;font-size:.88rem;font-weight:600}
 <main>
   <div id="empty">
     <h1>Ask about IIIT Delhi academic rules</h1>
-    <p class="lead">Answers come only from official public documents, with the source shown so you can verify them. Pick your program at the top for branch-specific answers, and ask follow-up questions like in a normal chat.</p>
+    <p class="lead">Answers come only from official public documents, with the source shown so you can verify them. Mention your program (for example CSB) for branch-specific answers, and ask follow-up questions like in a normal chat.</p>
     <div class="chips" id="chips" aria-label="Suggested questions"></div>
   </div>
   <div id="thread" aria-live="polite"></div>
@@ -118,13 +117,6 @@ function setTheme(t) { root.setAttribute('data-theme', t); setS('theme', t); $('
 setTheme(getS('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
 $('theme').onclick = () => setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 
-/* program */
-const prog = $('prog');
-[['', 'Program: not set']].concat(PROGRAMS.map(p => [p, 'Program: ' + p])).forEach(([v, t]) => {
-  const o = document.createElement('option'); o.value = v; o.textContent = t; prog.appendChild(o);
-});
-prog.value = PROGRAMS.includes(getS('program')) ? getS('program') : '';
-prog.onchange = () => setS('program', prog.value);
 
 /* safe rendering (no innerHTML) */
 function inline(parent, text, idp) {
@@ -244,7 +236,7 @@ function paint(m, i) {
     const card = document.createElement('div'); card.className = 'card' + (m.notfound ? ' muted' : '');
     if (m.notfound) {
       block(card, 'I could not find this in the indexed documents.', idp);
-      block(card, 'Try rephrasing with the key terms, pick your program at the top, or check with the academic office. Only some official documents are indexed so far.', idp);
+      block(card, 'Try rephrasing with the key terms, mention your program, or check with the academic office. Only some official documents are indexed so far.', idp);
     } else block(card, m.text, idp);
     wrap.appendChild(card);
     if (m.sources && m.sources.length) wrap.appendChild(sourcesEl(m.sources, idp));
@@ -259,8 +251,14 @@ async function ask(question) {
   question = question.trim();
   if (question.length < 2 || busy) return;
   busy = true; go.disabled = true; q.value = ''; empty.hidden = true;
-  const history = messages.filter(m => !m.notfound && !m.unavailable).slice(-12)
-    .map(m => ({role: m.role, text: m.text.slice(0, 800)}));
+  const history = [];
+  for (let i = 0; i + 1 < messages.length; i += 2) {
+    const u = messages[i], a = messages[i + 1];
+    if (a.notfound || a.unavailable) continue;  // drop the whole turn, not just the answer
+    history.push({role: 'user', text: u.text.slice(0, 800)}, {role: 'assistant', text: a.text.slice(0, 800)});
+  }
+  history.splice(0, Math.max(0, history.length - 12));
+
   messages.push({role: 'user', text: question});
   paint(messages[messages.length - 1], messages.length - 1);
   const load = document.createElement('div'); load.className = 'msg bot';
@@ -273,7 +271,7 @@ async function ask(question) {
   const t2 = setTimeout(() => lt.textContent = 'The server may be waking up. This can take up to a minute.', 9000);
   try {
     const r = await fetch('/ask', {method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({question, history, branch: prog.value})});
+      body: JSON.stringify({question, history})});
     const data = await r.json();
     load.remove();
     if (!r.ok) {
