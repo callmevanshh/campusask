@@ -48,8 +48,12 @@ NOTED = ("Noted. What would you like to know? For example: whether your credits 
          "how much course load you can take, or Honors/Minor eligibility.")
 CLARIFY = ("Which program are you in? Course lists differ by program (CSE, CSAI, CSAM, CSD, CSSS, CSB, ECE, EVE, CSECON). "
            "Just tell me, for example: \"for CSB\".")
+PLANNING = re.compile(r"\b(?:sgpa|cgpa|gpa)\b.*\b(?:need|needed|require[d]?|should|reach|touch|minimum)\b"
+                      r"|\b(?:need|should|minimum)\b.*\b(?:sgpa|cgpa|grade)\b", re.I)
+PLAN_EXTRA = " grading scheme letter grade points CGPA SGPA"
 LEAK = re.compile(r"do not assume that credits|unless the sources say so|never carry over|answer only the new question|"
-                  r"for each semester in the student's plan|double-check the comparison", re.I)
+                  r"for each semester in the student's plan|double-check the comparison|required sgpa = \(|"
+                  r"do not multiply the required|never ask for individual|count only credits from courses", re.I)
 
 
 def _smalltalk(q):
@@ -107,6 +111,9 @@ def _topic(history):
 def _is_followup(q, history):
     if not history:
         return False
+    last_a = next((t["text"] for t in reversed(history) if t["role"] == "assistant"), "")
+    if "?" in last_a[-200:] and len(last_a) <= 400 and len(q.split()) <= 12 and not ASKING.search(q):
+        return True  # the student is answering a question the bot just asked
     _, words = _topic_words(q)
     if len(words) >= 5:
         return False  # a full question with its own topic is never merged with the previous one
@@ -127,7 +134,8 @@ def resolve(question, history=None, branch=""):
     topic = _topic(history) if use_hist else ""
     search_q = f"{topic} {question}".strip() if topic else question
     return {"branch": branch, "search_q": search_q, "use_hist": use_hist,
-            "personal": bool(PERSONAL.search(question))}
+            "personal": bool(PERSONAL.search(question)),
+            "extra": PLAN_EXTRA if PLANNING.search(search_q) else ""}
 
 
 def _relevant(chunks):
@@ -153,6 +161,15 @@ def _scrub(text):
     """Drop any line in which the model repeated one of its own instructions."""
     return "\n".join(ln for ln in text.split("\n") if not LEAK.search(ln)).strip()
 
+def _plain_math(text):
+    """The UI does not render LaTeX, so turn $...$ and common commands into plain text."""
+    text = re.sub(r"\\text\{([^}]*)\}", r"\1", text)
+    text = re.sub(r"\$\$?([^$\n]+)\$\$?", r"\1", text)
+    for a, b in (("\\min", "min"), ("\\max", "max"), ("\\times", "x"), ("\\cdot", "x"), ("\\leq", "<="),
+                 ("\\geq", ">="), ("\\le", "<="), ("\\ge", ">="), ("\\{", "{"), ("\\}", "}")):
+        text = text.replace(a, b)
+    return text
+
 def answer(question: str, history=None, branch: str = "") -> dict:
     r = resolve(question, history, branch)
     if "reply" in r:
@@ -164,7 +181,7 @@ def answer(question: str, history=None, branch: str = "") -> dict:
     if not with_hist and key in _cache:
         return _cache[key]
 
-    chunks = search(search_q, k=8 if personal else 6, branch=branch)
+    chunks = search(search_q + r["extra"], k=8 if personal else 6, branch=branch)
     print(f"[ask] q={question!r} resolved={search_q!r} branch={branch!r} followup={use_hist} personal={personal} "
           f"src={[c['source'].split('-')[0] + ':p' + str(c['page']) for c in chunks]} "
           f"kw={[round(c['kw'], 1) for c in chunks]}")
@@ -189,7 +206,7 @@ def answer(question: str, history=None, branch: str = "") -> dict:
     if text.strip().upper().startswith("CLARIFY:"):
         return {"answer": text.strip()[8:].strip(), "sources": []}
     
-    text = _scrub(text)
+    text = _plain_math(_scrub(text))
     cited = {int(n) for grp in re.findall(r"\[([\d,\s]+)\]", text) for n in re.findall(r"\d+", grp)}
     if text.strip().startswith(REFUSAL):
         print("[ask] refused by LLM")

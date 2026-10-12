@@ -53,4 +53,12 @@ fails += run("long self-contained questions", [
     ("I did a branch transfer from CSE to CSB after my 2nd semester. Do the extra discipline credits I completed in 1st year count towards the 12 additional discipline credits required for Graduating with Honors in CSB, or do they only count as open electives?",
      {"followup": False, "branch": "csb", "not": ["semester leave"]}),
 ])
+
+h = [{"role": "user", "text": "i have 116 credits by the end of 6th sem and a cgpa of 4.95, in 7th sem i have 5 courses of 4 credits each, how much grade should i get in each minimum to get to 5 cgpa in 7th sem"},
+     {"role": "assistant", "text": "What are the individual course credits and current grade points earned so far?"}]
+r = resolve("each course credit is 4", h, "")
+ok = r.get("use_hist") is True and "cgpa" in r["search_q"].lower() and "grade points" in r["extra"]
+print("PASS" if ok else "FAIL", "| a reply to the bot's own question is joined to that question")
+fails += not ok
+
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")
