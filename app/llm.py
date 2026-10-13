@@ -7,6 +7,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+BUDGET = float(os.getenv("LLM_BUDGET", "40"))  # total seconds a question may wait for the model
+
+def _models():
+    extra = [m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "").split(",") if m.strip()]
+    return [m for m in dict.fromkeys([os.getenv("GEMINI_MODEL")] + extra) if m]
+
 SYSTEM = (
     "You are CampusAsk, an assistant for IIIT Delhi students. Answer using ONLY the numbered sources below. "
     "Students write informally, with typos, abbreviations and sometimes Hinglish, so match the meaning of the question to the sources, not the exact words. "
@@ -39,6 +45,8 @@ SYSTEM = (
     "When every course in the coming semester has the same number of credits, treat each course as one unit: give the grade mix as a number of courses "
     "(for example 2 courses at C and 3 courses at C-), never as a number of credits, and use whole courses only. "
     "Name the smallest sufficient mix, and also show the next lower mix with its average to prove it is not enough. "
+    "For grade-planning questions give the final answer first, then show the working once, cleanly: no scratch work, no trial and error, "
+    "and no phrases like \"let's re-check\". Write the formula as one plain-text line. "
     "Assume CGPA is the credit-weighted average over all credits done, say so, and mention that dropping worst grades and SG/CW credits can change the real figure. "
     "Ask the student only for information that is truly missing; never ask for individual course grades when the student gave their current CGPA and credits. "
     "When comparing a number with a requirement, write both numbers, say whether one is less than, equal to or greater than the other, and double-check the comparison before concluding. "
@@ -75,8 +83,8 @@ def _history_text(history):
 
 
 def generate(question, chunks, history=None, branch=""):
-    key, model = os.getenv("GEMINI_API_KEY"), os.getenv("GEMINI_MODEL")
-    if not key or not model:
+    key, models = os.getenv("GEMINI_API_KEY"), _models()
+    if not key or not models:
         raise RuntimeError("Set GEMINI_API_KEY and GEMINI_MODEL in .env")
     context = "\n\n".join(
         f"[{i+1}] ({c.get('title', c['source'])}, {c.get('version') or 'n/a'}, "
@@ -85,14 +93,33 @@ def generate(question, chunks, history=None, branch=""):
     )
     who = f"The student says their program/branch is {branch.upper()}.\n\n" if branch else ""
     prompt = f"{SYSTEM}\n\n{who}{_history_text(history)}SOURCES:\n{context}\n\nQUESTION: {question}"
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.1}}
-    for attempt in range(4):
-        r = httpx.post(url, headers={"x-goog-api-key": key}, json=payload, timeout=60)
-        if r.status_code in (429, 503) and attempt < 3:
-            time.sleep(15 * (attempt + 1))
-            continue
-        r.raise_for_status()
-        break
-    parts = r.json()["candidates"][0]["content"]["parts"]
-    return "".join(p.get("text", "") for p in parts)
+
+    deadline, last = time.time() + BUDGET, None
+    for model in models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        for attempt in range(2):
+            left = deadline - time.time()
+            if left <= 2:
+                break
+            try:
+                r = httpx.post(url, headers={"x-goog-api-key": key}, json=payload, timeout=min(25, left))
+                r.raise_for_status()
+                parts = r.json()["candidates"][0]["content"]["parts"]
+                return "".join(p.get("text", "") for p in parts if not p.get("thought"))
+            except httpx.HTTPStatusError as e:
+                last, code = e, e.response.status_code
+                print(f"[llm] {model}: HTTP {code}")
+                if code in (500, 503) and attempt == 0:
+                    time.sleep(2)
+                    continue
+                break  # 429 (quota) or other: go straight to the next model
+            except httpx.HTTPError as e:
+                last = e
+                print(f"[llm] {model}: {e!r}")
+                break
+            except (KeyError, IndexError):
+                last = httpx.HTTPError(f"empty or blocked response from {model}")
+                print(f"[llm] {model}: empty or blocked response")
+                break
+    raise last or httpx.HTTPError("no model answered in time")

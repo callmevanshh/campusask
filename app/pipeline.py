@@ -52,7 +52,7 @@ PLANNING = re.compile(r"\b(?:sgpa|cgpa|gpa)\b.*\b(?:need|needed|require[d]?|shou
                       r"|\b(?:need|should|minimum)\b.*\b(?:sgpa|cgpa|grade)\b", re.I)
 PLAN_EXTRA = " grading scheme letter grade points CGPA SGPA"
 LEAK = re.compile(r"do not assume that credits|unless the sources say so|never carry over|answer only the new question|"
-                  r"for each semester in the student's plan|double-check the comparison|required sgpa = \(|"
+                  r"for each semester in the student's plan|double-check the comparison|"
                   r"do not multiply the required|never ask for individual|count only credits from courses", re.I)
 
 
@@ -219,9 +219,9 @@ def answer(question: str, history=None, branch: str = "") -> dict:
     except httpx.HTTPError as e:
         print("LLM ERROR:", repr(e))
         return {
-            "answer": "The AI summary is unavailable right now (usage limit reached). "
+            "answer": "The AI summary is unavailable right now (the model service is busy or its limit was reached). "
                       "Here are the most relevant passages from the official documents:",
-            "sources": _passages(chunks),
+            "sources": _passages(chunks[:4]),
         }
 
     if text.strip().upper().startswith("CLARIFY:"):

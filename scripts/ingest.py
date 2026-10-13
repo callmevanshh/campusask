@@ -72,6 +72,10 @@ def parse_pages(spec):
             pages.update(range(int(a), int(b or a) + 1))
     return pages
 
+def _has_content(md):
+    """False for a table whose cells are all empty (only pipes and dashes, or just ColN headers)."""
+    return bool(re.search(r"[A-Za-z0-9]", re.sub(r"\bCol\d+\b", "", md)))
+
 
 def page_tables(page):
     """Fallback: tables as Markdown via PyMuPDF. Often garbled for merged cells."""
@@ -86,7 +90,7 @@ def page_tables(page):
         except Exception:
             continue
         md = md.replace("<br>", " ").strip()
-        if len(md.split("\n")) >= 3 and len(md) > 80:
+        if len(md.split("\n")) >= 3 and len(md) > 80 and _has_content(md):
             out.append(md)
     return out
 
