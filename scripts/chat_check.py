@@ -61,4 +61,12 @@ ok = r.get("use_hist") is True and "cgpa" in r["search_q"].lower() and "grade po
 print("PASS" if ok else "FAIL", "| a reply to the bot's own question is joined to that question")
 fails += not ok
 
+from app.pipeline import _drop_empty_tables
+
+sample = "Answer\n\n```text\n|   |   |\n| --- | --- |\n|   |   |\n\n| A | B |\n| --- | --- |\n| 1 | 2 |"
+res = _drop_empty_tables(sample)
+ok = "| A | B |" in res and "| --- | --- |" in res and "```" not in res and "|   |" not in res
+print("PASS" if ok else "FAIL", "| empty tables and code fences are removed, real tables are kept")
+fails += not ok
+
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")

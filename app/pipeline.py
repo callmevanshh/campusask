@@ -170,6 +170,27 @@ def _plain_math(text):
         text = text.replace(a, b)
     return text
 
+_ROW = re.compile(r"^\s*(?:text)?\s*\|")
+
+
+def _drop_empty_tables(text):
+    """Remove code fences and table blocks that contain no letters or digits at all."""
+    lines, out, i = text.split("\n"), [], 0
+    while i < len(lines):
+        if _ROW.match(lines[i]):
+            j = i
+            while j < len(lines) and _ROW.match(lines[j]):
+                j += 1
+            block = lines[i:j]
+            if re.search(r"[A-Za-z0-9]", "".join(block)):
+                out.extend(block)
+            i = j
+        else:
+            if not lines[i].strip().startswith("```"):
+                out.append(lines[i])
+            i += 1
+    return "\n".join(out)
+
 def answer(question: str, history=None, branch: str = "") -> dict:
     r = resolve(question, history, branch)
     if "reply" in r:
@@ -206,7 +227,7 @@ def answer(question: str, history=None, branch: str = "") -> dict:
     if text.strip().upper().startswith("CLARIFY:"):
         return {"answer": text.strip()[8:].strip(), "sources": []}
     
-    text = _plain_math(_scrub(text))
+    text = _drop_empty_tables(_plain_math(_scrub(text)))
     cited = {int(n) for grp in re.findall(r"\[([\d,\s]+)\]", text) for n in re.findall(r"\d+", grp)}
     if text.strip().startswith(REFUSAL):
         print("[ask] refused by LLM")
