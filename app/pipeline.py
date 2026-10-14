@@ -2,6 +2,7 @@ import os
 import re
 
 import httpx
+from app import planner
 
 from app.llm import generate
 from app.retrieval import search
@@ -214,8 +215,9 @@ def answer(question: str, history=None, branch: str = "") -> dict:
     if with_hist:
         # follow-ups need the earlier answers; a fresh personal question only needs the facts the student stated
         hist = history if use_hist else [t for t in history if t["role"] == "user"][-6:]
+    verified = planner.verified(question, history) if (personal and PLANNING.search(search_q)) else ""
     try:
-        text = generate(search_q, chunks, hist, branch)
+        text = generate(search_q, chunks, hist, branch, verified)
     except httpx.HTTPError as e:
         print("LLM ERROR:", repr(e))
         return {

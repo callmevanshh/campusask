@@ -9,9 +9,11 @@ load_dotenv()
 
 BUDGET = float(os.getenv("LLM_BUDGET", "40"))  # total seconds a question may wait for the model
 
+
 def _models():
     extra = [m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "").split(",") if m.strip()]
     return [m for m in dict.fromkeys([os.getenv("GEMINI_MODEL")] + extra) if m]
+
 
 SYSTEM = (
     "You are CampusAsk, an assistant for IIIT Delhi students. Answer using ONLY the numbered sources below. "
@@ -46,6 +48,8 @@ SYSTEM = (
     "(for example 2 courses at C and 3 courses at C-), never as a number of credits, and use whole courses only. "
     "Name the smallest sufficient mix, and also show the next lower mix with its average to prove it is not enough. "
     "For grade-planning questions give the final answer first, then show the working once, cleanly: no scratch work, no trial and error, "
+    "If a VERIFIED CALCULATION block is given, copy its numbers exactly as written, never recompute them, present the steps in plain text, "
+    "and cite the grading-scheme source [n] for the grade points. "
     "and no phrases like \"let's re-check\". Write the formula as one plain-text line. "
     "Assume CGPA is the credit-weighted average over all credits done, say so, and mention that dropping worst grades and SG/CW credits can change the real figure. "
     "Ask the student only for information that is truly missing; never ask for individual course grades when the student gave their current CGPA and credits. "
@@ -69,6 +73,7 @@ SYSTEM = (
     "If a table in the sources looks garbled or incomplete, say so and point the student to the official PDF instead of guessing."
 )
 
+
 def _history_text(history):
     if not history:
         return ""
@@ -82,19 +87,10 @@ def _history_text(history):
             "below. Rules must come from SOURCES):\n" + "\n".join(lines) + "\n\n")
 
 
-def generate(question, chunks, history=None, branch=""):
+def _call(payload):
     key, models = os.getenv("GEMINI_API_KEY"), _models()
     if not key or not models:
         raise RuntimeError("Set GEMINI_API_KEY and GEMINI_MODEL in .env")
-    context = "\n\n".join(
-        f"[{i+1}] ({c.get('title', c['source'])}, {c.get('version') or 'n/a'}, "
-        f"section: {c.get('section') or 'n/a'}, page {c['page']})\n{c['text']}"
-        for i, c in enumerate(chunks)
-    )
-    who = f"The student says their program/branch is {branch.upper()}.\n\n" if branch else ""
-    prompt = f"{SYSTEM}\n\n{who}{_history_text(history)}SOURCES:\n{context}\n\nQUESTION: {question}"
-    payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.1}}
-
     deadline, last = time.time() + BUDGET, None
     for model in models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
@@ -123,3 +119,19 @@ def generate(question, chunks, history=None, branch=""):
                 print(f"[llm] {model}: empty or blocked response")
                 break
     raise last or httpx.HTTPError("no model answered in time")
+
+
+def generate(question, chunks, history=None, branch="", verified=""):
+    context = "\n\n".join(
+        f"[{i+1}] ({c.get('title', c['source'])}, {c.get('version') or 'n/a'}, "
+        f"section: {c.get('section') or 'n/a'}, page {c['page']})\n{c['text']}"
+        for i, c in enumerate(chunks)
+    )
+    who = f"The student says their program/branch is {branch.upper()}.\n\n" if branch else ""
+    prompt = f"{SYSTEM}\n\n{who}{_history_text(history)}{verified}SOURCES:\n{context}\n\nQUESTION: {question}"
+    return _call({"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.1}})
+
+
+def extract_json(prompt):
+    return _call({"contents": [{"parts": [{"text": prompt}]}],
+                  "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}})
