@@ -77,6 +77,14 @@ def _has_content(md):
     return bool(re.search(r"[A-Za-z0-9]", re.sub(r"\bCol\d+\b", "", md)))
 
 
+def _tidy(md):
+    md = md.replace("<br>", " ").strip()
+    md = re.sub(r"^\s*text(?=\|)", "", md)  # a stray 'text' that PyMuPDF writes before the first row
+    md = re.sub(r"[ \t]{2,}", " ", md)      # column padding
+    md = re.sub(r"-{4,}", "---", md)        # padded separator rows
+    return md.strip()
+
+
 def page_tables(page):
     """Fallback: tables as Markdown via PyMuPDF. Often garbled for merged cells."""
     try:
@@ -86,10 +94,9 @@ def page_tables(page):
     out = []
     for t in found.tables:
         try:
-            md = t.to_markdown()
+            md = _tidy(t.to_markdown())
         except Exception:
             continue
-        md = md.replace("<br>", " ").strip()
         if len(md.split("\n")) >= 3 and len(md) > 80 and _has_content(md):
             out.append(md)
     return out
@@ -97,7 +104,34 @@ def page_tables(page):
 
 def curated(stem, page_num):
     p = TABLE_DIR / f"{stem}-p{page_num}.md"
-    return p.read_text(encoding="utf-8") if p.exists() else None
+    if not p.exists():
+        return None
+    t = p.read_text(encoding="utf-8")
+    t = re.sub(r"^\s*```[A-Za-z]*\s*$", "", t, flags=re.M)    # code fences
+    t = re.sub(r"^(\s*)text(?=\s*\|)", r"\1", t, flags=re.M)  # stray 'text' before a table row
+    return t
+
+def _cells(line):
+    return [c.strip() for c in line.strip().strip("|").split("|")]
+
+
+def merge_continuations(block):
+    """In a 2-column table (offense | penalty) a row with an empty first cell continues the row above:
+    a cell that was split by a page break."""
+    rows = block.split("\n")
+    if len(rows) < 3 or len(_cells(rows[0])) != 2:
+        return block
+    out, last = rows[:2], None
+    for ln in rows[2:]:
+        c = _cells(ln)
+        if len(c) == 2 and not c[0] and c[1] and last is not None:
+            prev = _cells(out[last])
+            prev[1] = (prev[1] + "<br>" + c[1]).strip()
+            out[last] = "| " + " | ".join(prev) + " |"
+        else:
+            out.append(ln)
+            last = len(out) - 1
+    return "\n".join(out)
 
 
 def parse_curated(md):
@@ -114,7 +148,7 @@ def parse_curated(md):
             cur.append(s)
             continue
         if cur:
-            block = "\n".join(cur)
+            block = merge_continuations("\n".join(cur))
             tables.append((caption + "\n\n" + block) if caption else block)
             cur = []
         prose.append(ln)
@@ -154,6 +188,15 @@ def split_table(md, limit=TABLE_LIMIT):
     return pieces
 
 
+CUT = re.compile(r"\b(?:change|version|revision|amendment)\s+history\b", re.I)
+
+
+def cut_history(text):
+    """Drop everything from a 'Change History' heading onward; the rules above it stay."""
+    m = CUT.search(text)
+    return (text[:m.start()].rstrip(), True) if m else (text, False)
+
+
 def iter_pages(path, skip):
     if path.suffix.lower() in (".txt", ".md"):
         yield 1, clean(path.read_text(encoding="utf-8")), "web", []
@@ -169,7 +212,8 @@ def iter_pages(path, skip):
             text, tables = parse_curated(cur)
             yield page_num, text, "pdf", tables
         else:
-            yield page_num, clean(page.get_text()), "pdf", page_tables(page)
+            text, cut = cut_history(clean(page.get_text()))
+            yield page_num, text, "pdf", ([] if cut else page_tables(page))
     doc.close()
 
 

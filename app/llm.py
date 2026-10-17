@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BUDGET = float(os.getenv("LLM_BUDGET", "40"))  # total seconds a question may wait for the model
+BUDGET = float(os.getenv("LLM_BUDGET", "45"))  # seconds one call may spend across all models
 
 
 def _models():
@@ -15,11 +15,15 @@ def _models():
     return [m for m in dict.fromkeys([os.getenv("GEMINI_MODEL")] + extra) if m]
 
 
+def model_count():
+    return len(_models())
+
+
 SYSTEM = (
-    "You are CampusAsk, an assistant for IIIT Delhi students. Answer using ONLY the numbered sources below. "
+    "You are CampusAsk, an assistant for IIIT Delhi students about the Institute's academic rules and campus policies. Answer using ONLY the numbered sources below. "
     "Students write informally, with typos, abbreviations and sometimes Hinglish, so match the meaning of the question to the sources, not the exact words. "
     "Reply in the language the student used (English, or Hinglish in Roman script). "
-    "The sources may come from different documents (UG regulations, ordinances, and branch-specific regulations such as CSE or CSB). "
+    "The sources may come from different documents (UG regulations, ordinances, branch-specific regulations such as CSE or CSB, and policies on hostels, fines, student conduct, ragging and academic dishonesty). "
     "If the answer differs between branches or batches, say which branch or batch each rule applies to. "
     "If it depends on the student's branch or batch and none is given, give the general UG rule and say the branch regulations may differ. "
     "A course table's batch is stated only in the caption line just above it (for example 'For students 2024 batch and onwards'). "
@@ -66,8 +70,11 @@ SYSTEM = (
     "Bold the key number or term. Do not add background the student did not ask for. "
     "Cite sources like [1] after each claim, one number per bracket; for a table put the citation after the table. "
     "If the sources only partly answer the question, say what they cover and what is missing. "
-    "When useful, name the document and its version (for example 'According to the UG Regulations (Oct 2025)...'). "
-    "If the question is not about IIIT Delhi academic rules, or the sources contain nothing relevant, reply exactly: 'I could not find this in the documents.' "
+    "When useful, name the document and its version inside a complete sentence; never end a line with an ellipsis. "
+    "If the student describes their own situation and the sources contain rules that bear on it, do not reply with the not-found sentence: "
+    "state those rules, apply them to what the student said, and say which part of the situation the sources do not cover. "
+    "Whenever a statement comes from a program-specific regulation (CSE, CSB and so on), name that program in the sentence and never present it as a rule for every student. "
+    "If the question is not about IIIT Delhi's rules or policies, or the sources contain nothing relevant, reply exactly: 'I could not find this in the documents.' "
     "Do not chat, joke or answer general-knowledge questions. "
     "Never use outside knowledge and never invent numbers, courses or rules. "
     "If a table in the sources looks garbled or incomplete, say so and point the student to the official PDF instead of guessing."
@@ -87,11 +94,13 @@ def _history_text(history):
             "below. Rules must come from SOURCES):\n" + "\n".join(lines) + "\n\n")
 
 
-def _call(payload):
-    key, models = os.getenv("GEMINI_API_KEY"), _models()
+def _call(payload, exclude=(), budget=None):
+    """Returns (text, model_used); tries the configured models in order within BUDGET seconds."""
+    key = os.getenv("GEMINI_API_KEY")
+    models = [m for m in _models() if m not in exclude]
     if not key or not models:
         raise RuntimeError("Set GEMINI_API_KEY and GEMINI_MODEL in .env")
-    deadline, last = time.time() + BUDGET, None
+    deadline, last = time.time() + (BUDGET if budget is None else budget), None
     for model in models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         for attempt in range(2):
@@ -99,10 +108,10 @@ def _call(payload):
             if left <= 2:
                 break
             try:
-                r = httpx.post(url, headers={"x-goog-api-key": key}, json=payload, timeout=min(25, left))
+                r = httpx.post(url, headers={"x-goog-api-key": key}, json=payload, timeout=min(15, left))
                 r.raise_for_status()
                 parts = r.json()["candidates"][0]["content"]["parts"]
-                return "".join(p.get("text", "") for p in parts if not p.get("thought"))
+                return "".join(p.get("text", "") for p in parts if not p.get("thought")), model
             except httpx.HTTPStatusError as e:
                 last, code = e, e.response.status_code
                 print(f"[llm] {model}: HTTP {code}")
@@ -121,7 +130,7 @@ def _call(payload):
     raise last or httpx.HTTPError("no model answered in time")
 
 
-def generate(question, chunks, history=None, branch="", verified=""):
+def generate_ex(question, chunks, history=None, branch="", verified="", exclude=(), budget=None):
     context = "\n\n".join(
         f"[{i+1}] ({c.get('title', c['source'])}, {c.get('version') or 'n/a'}, "
         f"section: {c.get('section') or 'n/a'}, page {c['page']})\n{c['text']}"
@@ -129,9 +138,13 @@ def generate(question, chunks, history=None, branch="", verified=""):
     )
     who = f"The student says their program/branch is {branch.upper()}.\n\n" if branch else ""
     prompt = f"{SYSTEM}\n\n{who}{_history_text(history)}{verified}SOURCES:\n{context}\n\nQUESTION: {question}"
-    return _call({"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.1}})
+    return _call({"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"temperature": 0.1}}, exclude, budget)
+
+
+def generate(question, chunks, history=None, branch="", verified=""):
+    return generate_ex(question, chunks, history, branch, verified)[0]
 
 
 def extract_json(prompt):
     return _call({"contents": [{"parts": [{"text": prompt}]}],
-                  "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}})
+                  "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}})[0]

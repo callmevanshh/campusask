@@ -1,0 +1,22 @@
+{"q": "What is the attendance rule?", "all": [["two days", "2 days"]], "src": "UG p22"}
+{"q": "How many semester leaves can a student take in the whole program?", "all": [["four", "4 semester", "4 leaves"]], "src": "UG p22"}
+{"q": "What happens if I get two or more F grades in each of two consecutive semesters?", "all": [["terminat"]], "src": "UG p21"}
+{"q": "What is the minimum CGPA required for graduating with Honors?", "all": [["8.0"]], "src": "UG p26"}
+{"q": "Do the 156 credits include SG and CW?", "all": [["include"], ["2 credits", "two credits"]], "src": "UG p25"}
+{"q": "How long do I have to appeal if my program is terminated?", "all": [["two weeks", "2 weeks"]], "src": "UG p23"}
+{"q": "How long do I have to request a branch change after the first semester results?", "all": [["week"]], "src": "UG p23"}
+{"q": "When can I migrate to the dual degree program?", "all": [["semester 6", "6th semester", "sixth semester"]], "src": "UG p25"}
+{"q": "What is the maximum number of credits I can transfer from another university?", "all": [["40"]], "src": "UG p18"}
+{"q": "Can I withdraw from an elective course after the mid-semester exam?", "all": [["at most one", "one elective", "only one"]], "src": "UG p9"}
+{"q": "What is the normal credit load for a third year student?", "all": [["16"], ["22"]], "src": "UG p10"}
+{"q": "What happens to an Incomplete I grade that is not converted?", "all": [["f grade", "to f", "an f"]], "src": "UG p15"}
+{"q": "What happens if I am absent for more than 20 days in a semester?", "all": [["semester leave"]], "src": "UG p22"}
+{"q": "What is the maximum duration allowed to complete the B.Tech program?", "all": [["six years", "6 years"]], "src": "UG p25"}
+{"q": "What is the fine for unauthorized parking?", "all": [["500"]], "src": "Fine-Policy"}
+{"q": "What is the penalty for entering or using the opposite gender hostel?", "all": [["5000", "5,000"]], "src": "Fine-Policy"}
+{"q": "What is the penalty for illegal use of electric appliances in hostel rooms?", "all": [["500"], ["confiscat"]], "src": "Fine-Policy"}
+{"q": "What happens if a student submits a forged fee receipt?", "all": [["debar"], ["2000", "2,000"]], "src": "Fine-Policy"}
+{"q": "Who won the cricket world cup?", "refuse": true}
+{"q": "How can I get my bonafide certificate?", "refuse": true}
+{"q": "What is the phone number of the campus dispensary doctor?", "refuse": true}
+{"q": "What is the penalty for plagiarism?", "all": [], "src": "Academic-Dishonesty p3 (read the answer yourself)"}

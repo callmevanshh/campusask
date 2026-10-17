@@ -27,8 +27,9 @@ SYNONYMS = {"sem": "semester", "sems": "semester", "honour": "honor", "honours":
             "intern": "internship", "interns": "internship", "gpa": "cgpa", "uni": "university"}
 EXPAND = {"backlog": ["fail", "repeat"], "backlogs": ["fail", "repeat"],
           "criteria": ["requirements"], "criterion": ["requirements"],
-          "long": ["duration"], "length": ["duration"]
-          }
+          "long": ["duration"], "length": ["duration"],
+          "plagiarism": ["cheating", "dishonesty"], "plagiarize": ["cheating", "dishonesty"],
+          "penalty": ["punishment"], "penalties": ["punishment"], "punishment": ["penalty"]}
 
 _ORD = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"]
 ORD_DIGIT = {w: str(i + 1) for i, w in enumerate(_ORD)}
@@ -88,15 +89,32 @@ if not LITE:
 
 BRANCHES = {"cse", "csai", "csam", "csd", "csss", "csb", "ece", "eve", "csecon"}
 BRANCH_W = float(os.getenv("BRANCH_W", "0.5"))
-NEWEST_BOOST = float(os.getenv("NEWEST_BOOST", "1.4"))
+NEWEST_BOOST = float(os.getenv("NEWEST_BOOST", "2.5"))
+TABLE_BOOST = float(os.getenv("TABLE_BOOST", "2.5"))
+CAMPUS_W = float(os.getenv("CAMPUS_W", "0.6"))
 YEAR = re.compile(r"\b(?:19|20)\d\d\b|\bbatch\b", re.I)
 SWITCHING = re.compile(r"transfer|chang|switch|migrat", re.I)
 GENERIC = {_stem(w) for w in ("branch", "program", "programme", "department")}
+_O = r"(?:first|second|third|fourth|fifth|sixth|seventh|eighth|1st|2nd|3rd|4th|5th|6th|7th|8th|[1-8])"
+CURRICULUM = re.compile(rf"\b{_O}\s*sem(?:ester)?s?\b.*\b(?:courses?|subjects?)\b"
+                        rf"|\b(?:courses?|subjects?)\b.*\b{_O}\s*sem(?:ester)?s?\b"
+                        r"|\bsem(?:ester)?s?[\s\-]*wise\b|\bcurriculum\b|\bprogram structure\b|\bsyllabus\b", re.I)
+# campus-life policies: for generic academic questions they should not crowd out the regulations
+CAMPUS_FILES = ("Hostel-", "Final-Hostel", "Fine-", "Student-Conduct", "Policy-against", "Academic-Dishonesty", "Fee-")
+CAMPUS_TERMS = {_stem(w) for w in (
+    "hostel", "mess", "canteen", "room", "rooms", "warden", "fine", "fines", "penalty", "penalties", "ragging",
+    "conduct", "discipline", "disciplinary", "misconduct", "plagiarism", "plagiarize", "cheating", "dishonesty",
+    "harassment", "complaint", "complaints", "complain", "grievance", "security", "visitor", "visitors", "curfew",
+    "laundry", "wifi", "internet", "fee", "fees", "tuition", "refund", "scholarship", "scholarships", "stipend",
+    "allotment", "campus", "behaviour", "behavior", "punishment", "violation", "cab", "driver", "transport",
+    "bus", "sports", "gym")}
 _branch_of = []
 for _r in _rows:
     _b = _r["source"].split("-")[0].lower()
     _branch_of.append(_b if _b in BRANCHES else None)
 _newest = np.array([1.0 if r.get("newest") else 0.0 for r in _rows])
+_is_table = np.array([bool(r.get("table")) for r in _rows])
+_campus = np.array([1.0 if r["source"].startswith(CAMPUS_FILES) else 0.0 for r in _rows])
 
 
 def _named(query, branch=None):
@@ -113,8 +131,14 @@ def _scope_weights(query, branch=None):
         if b is None:
             continue
         w[i] = (1.8 if b in mentioned else 0.15) if mentioned else BRANCH_W
-    if not YEAR.search(query):
+    if not YEAR.search(query) and (mentioned or CURRICULUM.search(query)):
         w = w * np.where(_newest > 0, NEWEST_BOOST, 1.0)
+    if mentioned and CURRICULUM.search(query):  # a curriculum question wants that program's table
+        for i, b in enumerate(_branch_of):
+            if b in mentioned and _is_table[i]:
+                w[i] *= TABLE_BOOST
+    if not ({_stem(x) for x in _words(query)} & CAMPUS_TERMS):
+        w = w * np.where(_campus > 0, CAMPUS_W, 1.0)
     return w
 
 
@@ -125,7 +149,7 @@ def _query_tokens(query, branch=None):
     return toks
 
 
-MAX_EXTRA = 6
+MAX_EXTRA = 4
 
 
 def _first_sec(r):
@@ -137,8 +161,6 @@ def _last_sec(r):
 
 
 def _with_neighbours(order, k):
-    """A rule often continues in the next chunk. If a retrieved chunk ends inside a section that the
-    next chunk continues, hand the model that next chunk as well."""
     out = list(order[:k])
     extra = 0
     for i in list(out):

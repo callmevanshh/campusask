@@ -9,4 +9,4 @@
 {"q": "Can I replace a core course with an elective after failing it twice?", "pages": [15], "answerable": true}
 {"q": "What is the minimum percentage required in class 12 for admission eligibility?", "pages": [3], "answerable": true}
 {"q": "Who won the cricket world cup?", "pages": [], "answerable": false}
-{"q": "What is the mess menu this week?", "pages": [], "answerable": false}
+{"q": "What is the mess menu this week?", "pages": [6], "answerable": true, "source": "Final-Hostel-Management.pdf", "contains": ["menu"]}

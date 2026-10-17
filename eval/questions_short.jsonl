@@ -9,4 +9,5 @@
 {"q": "minor requirement", "pages": [26], "answerable": true}
 {"q": "bitcoin price", "pages": [], "answerable": false}
 {"q": "recipe for pasta", "pages": [], "answerable": false}
-{"q": "hostel food menu", "pages": [], "answerable": false}
+{"q": "hostel food menu", "pages": [6], "source": "Final-Hostel-Management.pdf", "contains": ["menu"], "answerable": true}
+{"q": "penalty for plagiarism", "pages": [3], "source": "Academic-Dishonesty.pdf", "answerable": true}

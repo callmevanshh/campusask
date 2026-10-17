@@ -37,9 +37,9 @@
 {"q": "How many credits are awarded for BTech Project BTP?", "pages": [], "answerable": false}
 {"q": "Can I register for underload credits in my final semester?", "pages": [11], "answerable": true}
 {"q": "Who won the cricket world cup?", "pages": [], "answerable": false}
-{"q": "What is the mess menu this week?", "pages": [], "answerable": false}
+{"q": "What is the mess menu this week?", "pages": [6], "answerable": true, "source": "Final-Hostel-Management.pdf", "contains": ["menu"]}
 {"q": "What is the hostel night entry time limit for first years?", "pages": [], "answerable": false}
-{"q": "How much is the total tuition fee per semester for BTech?", "pages": [], "answerable": false}
+{"q": "How much is the total tuition fee per semester for BTech?", "pages": [1], "answerable": true, "source": "Fee-Schedule-25.26.txt", "contains": ["tuition"]}
 {"q": "What are the library opening hours on weekends?", "pages": [], "answerable": false}
 {"q": "How do I apply for a Wi-Fi IP address in the hostel?", "pages": [], "answerable": false}
 {"q": "What was the average package for CSE in placements last year?", "pages": [], "answerable": false}

@@ -1,0 +1,19 @@
+name: checks
+on: [push, pull_request]
+jobs:
+  deterministic:
+    runs-on: ubuntu-latest
+    env:
+      LITE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-lite.txt
+      - run: pip install -r requirements-lite.txt
+      - run: python -m scripts.chat_check
+      - run: python -m scripts.planner_check
+      - run: python -m scripts.failover_check
+      - run: python -m scripts.check_all --min-hit3=0.9

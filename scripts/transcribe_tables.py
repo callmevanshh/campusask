@@ -81,19 +81,33 @@ def transcribe(doc, idxs):
 def main():
     run = "--run" in sys.argv
     only = next((a for a in sys.argv[1:] if not a.startswith("--")), None)
+    pages = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--pages=")), None)
     OUT.mkdir(parents=True, exist_ok=True)
     todo = []
     for row in csv.DictReader(REGISTRY.open(encoding="utf-8")):
         f = row["file"]
-        if not f.lower().endswith(".pdf") or f.split("-")[0].lower() not in BRANCHES:
+        if not f.lower().endswith(".pdf") or (only and f != only):
             continue
-        if only and f != only:
+        explicit = bool(only and pages)
+        if not explicit and f.split("-")[0].lower() not in BRANCHES:
             continue
         doc = pymupdf.open(RAW / f)
-        for g in groups(candidates(doc)):
-            if not (OUT / f"{Path(f).stem}-p{g[0] + 1}.md").exists():
-                todo.append((f, g))
+        if sum(len(p.get_text()) for p in doc) < 200:
+            print(f"WARNING: {f} has almost no readable text (corrupt or scanned). Skipping.")
+            doc.close()
+            continue
+        if explicit:  # an explicit page range for any registered PDF, sent as one group
+            a, _, b = pages.partition("-")
+            first, last = int(a), int(b or a)
+            if last - first + 1 > 6:
+                sys.exit("At most 6 pages per call.")
+            found = [list(range(first - 1, min(last, len(doc))))]
+        else:
+            found = groups(candidates(doc))
         doc.close()
+        for g in found:
+            if g and not (OUT / f"{Path(f).stem}-p{g[0] + 1}.md").exists():
+                todo.append((f, g))
     for f, g in todo:
         print(f"{f}: pages {g[0] + 1}-{g[-1] + 1}")
     print(f"\n{len(todo)} group(s) to transcribe (1 Gemini call each).")

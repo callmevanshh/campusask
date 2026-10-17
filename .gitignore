@@ -3,3 +3,5 @@ __pycache__/
 .env
 data/raw/
 data/processed/
+data/feedback*.jsonl
+eval/questions_real_candidates.jsonl

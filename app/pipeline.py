@@ -1,15 +1,18 @@
 import os
 import re
+import time
 
 import httpx
-from app import planner
 
-from app.llm import generate
+from app import planner
+from app.llm import generate_ex, model_count
 from app.retrieval import search
 
 LITE = os.getenv("LITE") == "1"
 SEM_MIN = 0.40
 KW_MIN = float(os.getenv("KW_MIN", "2"))
+SECOND_OPINION = os.getenv("SECOND_OPINION", "1") != "0"  # set to 0 to switch the second opinion off
+TOTAL_BUDGET = float(os.getenv("LLM_BUDGET", "45"))  # seconds one question may spend on the models
 REFUSAL = "I could not find this in the documents."
 _cache = {}
 
@@ -39,7 +42,9 @@ FOLLOWUP = re.compile(
     re.I)
 
 # the student talks about themselves
-PERSONAL = re.compile(r"\b(?:i|i'm|im|my|mera|meri|mere|maine)\b", re.I)
+PERSONAL = re.compile(
+    r"\b(?:i have|i've|i am|i'm|i got|i did|i took|i failed|i missed|i completed|i finished|i will|i plan|"
+    r"my (?:cgpa|sgpa|credits?|grades?|semester|sem|backlogs?|branch|gpa)|mera|meri|mere|maine)\b", re.I)
 STATEMENT = re.compile(r"^\s*(?:i|i'm|im|my|mera|meri|maine|main)\b", re.I)
 ASKING = re.compile(
     r"\?|\b(?:what|how|can|could|will|would|should|which|when|where|why|who|kya|kitna|kitne|kab|kaise|kyun|"
@@ -54,7 +59,9 @@ PLANNING = re.compile(r"\b(?:sgpa|cgpa|gpa)\b.*\b(?:need|needed|require[d]?|shou
 PLAN_EXTRA = " grading scheme letter grade points CGPA SGPA"
 LEAK = re.compile(r"do not assume that credits|unless the sources say so|never carry over|answer only the new question|"
                   r"for each semester in the student's plan|double-check the comparison|"
-                  r"do not multiply the required|never ask for individual|count only credits from courses", re.I)
+                  r"do not multiply the required|never ask for individual|count only credits from courses|"
+                  r"do not reply with the not-found|never present it as a rule|"
+                  r"^\s*(?:<br>)?\s*according to the [^.\n]{0,80}\.\.\.\s*$", re.I)
 
 
 def _smalltalk(q):
@@ -122,7 +129,9 @@ def _is_followup(q, history):
         return True
     return len(words) == 0 and len(q.split()) <= 6  # "for cse", "CSB", "table ?", "make a table"
 
+
 def resolve(question, history=None, branch=""):
+    """Decide what to search for. Returns {'reply': text} for small talk or a clarification."""
     small = _smalltalk(question)
     if small:
         return {"reply": small}
@@ -134,9 +143,12 @@ def resolve(question, history=None, branch=""):
     use_hist = _is_followup(question, history)
     topic = _topic(history) if use_hist else ""
     search_q = f"{topic} {question}".strip() if topic else question
-    return {"branch": branch, "search_q": search_q, "use_hist": use_hist,
-            "personal": bool(PERSONAL.search(question)),
-            "extra": PLAN_EXTRA if PLANNING.search(search_q) else ""}
+    personal = bool(PERSONAL.search(question)) or (
+        use_hist and any(PERSONAL.search(t["text"]) for t in (history or []) if t["role"] == "user"))
+    # CGPA planning needs a personal question with at least two numbers; 'minimum CGPA required for Honors' is not planning
+    planning = personal and bool(PLANNING.search(search_q)) and len(re.findall(r"\d+(?:\.\d+)?", search_q)) >= 2
+    return {"branch": branch, "search_q": search_q, "use_hist": use_hist, "personal": personal,
+            "planning": planning, "extra": PLAN_EXTRA if planning else ""}
 
 
 def _relevant(chunks):
@@ -158,9 +170,11 @@ def _passages(chunks):
         })
     return out
 
+
 def _scrub(text):
     """Drop any line in which the model repeated one of its own instructions."""
     return "\n".join(ln for ln in text.split("\n") if not LEAK.search(ln)).strip()
+
 
 def _plain_math(text):
     """The UI does not render LaTeX, so turn $...$ and common commands into plain text."""
@@ -170,6 +184,7 @@ def _plain_math(text):
                  ("\\geq", ">="), ("\\le", "<="), ("\\ge", ">="), ("\\{", "{"), ("\\}", "}")):
         text = text.replace(a, b)
     return text
+
 
 _ROW = re.compile(r"^\s*(?:text)?\s*\|")
 
@@ -192,6 +207,26 @@ def _drop_empty_tables(text):
             i += 1
     return "\n".join(out)
 
+
+def _fix_br(text):
+    """<br> belongs inside table rows only; anywhere else it becomes a line break."""
+    out = []
+    for ln in text.split("\n"):
+        if _ROW.match(ln):
+            out.append(ln)
+        else:
+            out.extend(re.split(r"<br\s*/?>", ln, flags=re.I))
+    return "\n".join(out)
+
+
+def _finish(text):
+    text = _fix_br(_drop_empty_tables(_plain_math(_scrub(text))))
+    cited = {int(n) for grp in re.findall(r"\[([\d,\s]+)\]", text) for n in re.findall(r"\d+", grp)}
+    # a last line holding only citation marks is noise (the citations are already counted above)
+    text = re.sub(r"\n[ \t]*(?:\[\d+(?:\s*,\s*\d+)*\][ \t]*)+$", "", text).rstrip()
+    return text, cited
+
+
 def answer(question: str, history=None, branch: str = "") -> dict:
     r = resolve(question, history, branch)
     if "reply" in r:
@@ -205,7 +240,7 @@ def answer(question: str, history=None, branch: str = "") -> dict:
 
     chunks = search(search_q + r["extra"], k=8 if personal else 6, branch=branch)
     print(f"[ask] q={question!r} resolved={search_q!r} branch={branch!r} followup={use_hist} personal={personal} "
-          f"src={[c['source'].split('-')[0] + ':p' + str(c['page']) for c in chunks]} "
+          f"planning={r['planning']} src={[c['source'].split('-')[0] + ':p' + str(c['page']) for c in chunks]} "
           f"kw={[round(c['kw'], 1) for c in chunks]}")
     if not chunks or not _relevant(chunks):
         print("[ask] refused by relevance gate")
@@ -213,11 +248,12 @@ def answer(question: str, history=None, branch: str = "") -> dict:
 
     hist = None
     if with_hist:
-        # follow-ups need the earlier answers; a fresh personal question only needs the facts the student stated
         hist = history if use_hist else [t for t in history if t["role"] == "user"][-6:]
-    verified = planner.verified(question, history) if (personal and PLANNING.search(search_q)) else ""
+    verified = planner.verified(question, history) if r["planning"] else ""
+
+    t0 = time.time()
     try:
-        text = generate(search_q, chunks, hist, branch, verified)
+        text, model = generate_ex(search_q, chunks, hist, branch, verified)
     except httpx.HTTPError as e:
         print("LLM ERROR:", repr(e))
         return {
@@ -228,18 +264,28 @@ def answer(question: str, history=None, branch: str = "") -> dict:
 
     if text.strip().upper().startswith("CLARIFY:"):
         return {"answer": text.strip()[8:].strip(), "sources": []}
-    
-    text = _drop_empty_tables(_plain_math(_scrub(text)))
-    cited = {int(n) for grp in re.findall(r"\[([\d,\s]+)\]", text) for n in re.findall(r"\d+", grp)}
-    if text.strip().startswith(REFUSAL):
-        print("[ask] refused by LLM")
-        result = {"answer": REFUSAL, "sources": []}
-    elif not cited:
-        print("[ask] reply had no citations, treated as not found")
-        result = {"answer": REFUSAL, "sources": []}
-    else:
-        result = {"answer": text, "sources": [s for s in _passages(chunks) if s["n"] in cited]}
 
+    text, cited = _finish(text)
+    refused = text.strip().startswith(REFUSAL) or not cited
+    left = TOTAL_BUDGET - (time.time() - t0)
+    if refused and SECOND_OPINION and model_count() > 1 and left > 8:
+        # models sometimes refuse a question the sources do answer: ask the other model once, accept only a cited answer
+        try:
+            text2, model2 = generate_ex(search_q, chunks, hist, branch, verified, exclude=(model,), budget=left)
+            text2, cited2 = _finish(text2)
+            if cited2 and not text2.strip().startswith(REFUSAL):
+                print(f"[ask] second opinion from {model2} answered where {model} refused")
+                text, cited, refused = text2, cited2, False
+            else:
+                print(f"[ask] second opinion from {model2} also refused")
+        except httpx.HTTPError as e:
+            print("[ask] second opinion failed:", repr(e))
+
+    if refused:
+        print("[ask] refused by LLM" if text.strip().startswith(REFUSAL) else "[ask] reply had no citations, treated as not found")
+        return {"answer": REFUSAL, "sources": []}  # refusals are never cached
+
+    result = {"answer": text, "sources": [s for s in _passages(chunks) if s["n"] in cited]}
     if not with_hist:
         if len(_cache) > 500:
             _cache.clear()

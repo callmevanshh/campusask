@@ -14,7 +14,7 @@ My first idea was an auditor that checks ML papers against their GitHub reposito
 ## 3. Data
 - I used only public documents. The student portals are behind logins and stay out.
 - The site hosts every version of the UG regulations back to 2015, so I indexed the latest and added version metadata.
-- The last pages of each regulation are a change history. They were being retrieved as if they were rules, so I exclude them per document in `sources.csv`.
+- The last pages of each regulation are a change history. They were being retrieved as if they were rules, so I exclude them.
 - A PDF I opened in the browser's viewer got overwritten and became unreadable ("zlib error"). I re-downloaded it with PowerShell, because Python's HTTPS client failed on the college site's certificate chain.
 
 ## 4. Chunking and search
@@ -35,7 +35,7 @@ My first answer key had 50 questions and hybrid search scored 32% hit@3. I wrote
 - Free Render services sleep. UptimeRobot pings `/health` every five minutes.
 
 ## 8. The relevance gate that could not work
-I tuned a keyword-score threshold on well-phrased questions. Then a short valid question ("how many credits to graduate") scored 3.1 and the off-topic "who won the cricket world cup" scored 4.9, so no threshold could separate them. BM25 scores depend on question length. I made the gate loose (it only drops questions with no keyword match) and let the model decide relevance. A 26-question refusal test now refuses all 26.
+I tuned a keyword-score threshold on well-phrased questions. Then a short valid question ("how many credits to graduate") scored 3.1 and the off-topic "who won the cricket world cup" scored 4.9, so no threshold could separate them. BM25 scores depend on question length. I made the gate loose (it only drops questions with no keyword match) and let the model decide relevance. A refusal test over unanswerable questions now refuses them.
 
 ## 9. "Arre yaar"
 A prompt line told the model to reply briefly to greetings. It treated "who won the world cup" as small talk and chatted back. Small talk is now handled in code before any model call, and a reply without a citation is treated as "not found".
@@ -68,10 +68,31 @@ Students ask things like "I have 116 credits and plan 24 and 22, will I complete
 The same CGPA-target question gave a required SGPA of 5.29 in one run and 5.24 in the next. Prompts do not fix arithmetic. The model now only extracts the numbers (strict JSON, range-checked); Python computes the required SGPA and the smallest grade mix in whole courses and hands it back as a verified block the answer must copy. Three runs now agree (5.29), and an unreachable target is reported as unreachable.
 
 ## 16. A production outage
-The live site showed the passages-only fallback for every question. The old retry loop slept up to 90 seconds on a 429 before giving up. I did not capture the Render logs, so a quota error is the likely cause, not a confirmed one. The answer step now tries the next configured model immediately, with a 40-second total budget. One backup model returned HTTP 500 in my own check and was removed from the list.
+The live site showed the passages-only fallback for every question. The old retry loop slept up to 90 seconds on a 429 before giving up. I did not capture the Render logs, so a quota error is the likely cause, not a confirmed one. The answer step now tries the next configured model immediately, with a time budget. One backup model returned HTTP 500 in my own check and was removed; later checks showed other models timing out, which is why more than one model is configured.
+
+## 17. More documents, and the old questions got worse
+After adding six policy documents (hostel, fines, conduct, ragging, dishonesty, fees) my own checks fell: the program set's hit@3 went from 100% to 86%, and a quota question started retrieving a hostel page. Policy files now get a lower weight unless the question uses campus vocabulary, and a curriculum question about a named program boosts that program's tables. The numbers recovered.
+
+## 18. Excluding "change history" hid the Honors rule
+Each program's Honors requirements share a page with its "Change History". Excluding the whole page dropped the requirement. Now the text above the heading is indexed and the history below it is cut.
+
+## 19. A model that refused, and a cache that remembered it
+A model refused the plagiarism-penalty question although its sources answer it, and refusals were cached, so one flake persisted. A refusal now gets one second opinion from the other model (a cited answer is accepted); refusals are never cached. In my runs the second opinion rescued the plagiarism, cab-complaint, academic-calendar and single-room questions. The first version gave each call its own 45-second budget, so a refusal could take over a minute; the two calls now share one budget.
+
+## 20. Table artefacts and the fines table
+Tables from PyMuPDF started with a stray "text" before the first row, and the fines table split rows across page breaks. I transcribed it from page images and added a deterministic step that merges a continuation row into the row above (two-column tables only).
+
+## 21. A rule meant for CGPA planning fired on a plain question
+An automated answer-level check (substring rules against facts I took from the PDFs) failed on "What is the minimum CGPA required for graduating with Honors?". The log showed the cause: my "CGPA planning" pattern matched "CGPA ... required" and appended grading-scheme words to the search, so the grading pages outranked the Honors rule and both models correctly refused with the wrong sources. Planning now needs a personal question with at least two numbers, and a deterministic test covers both cases. A reply to the bot's own clarifying question also keeps the planning context now.
+
+## 22. Weighting the newest batch
+When a question names no year, the newest batch's table should win. Raising its weight from 1.4 to 2.5 lifted the program-specific set's hit@1 from 43% to 86% without changing hit@1 or hit@3 on any other set. The boost applies only when a program is named or the question is about a curriculum.
+
+## 23. Feedback loop and CI
+Added feedback buttons (accurate / not accurate / should have been found), a key-protected export, and a script that turns negative feedback into candidate test questions. GitHub Actions runs the deterministic tests and a retrieval regression gate (hit@3 must stay at or above 90% on every set) on every push. A lone citation line at the end of an answer is also removed now.
 
 ## Not built, on purpose
-Admin panel, analytics, accounts, hostel and fee documents, postgraduate regulations, timetables (they change every semester).
+Admin panel, analytics, accounts, postgraduate regulations, timetables (they change every semester).
 
 ## What I would do next
 Index the missing documents, measure accuracy on questions from real students, support fixed-grade constraints and two targets in the planner, and replace the free-tier model quota with a plan that can take real traffic.
@@ -81,4 +102,5 @@ Index the missing documents, measure accuracy on questions from real students, s
 2. Anything with a right answer (numbers, dates, comparisons) belongs in code, not in a prompt.
 3. Free tiers shape the architecture: memory limits chose the search method, request limits chose the fallbacks.
 4. Test conversation logic without the model so it is fast and repeatable.
-5. Measure first; when something breaks, add a test that would have caught it.
+5. Check answers, not just retrieval: the answer-level check found a bug that retrieval metrics could not.
+6. Measure first; when something breaks, add a test that would have caught it.

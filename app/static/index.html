@@ -59,6 +59,10 @@ summary{cursor:pointer;padding:.65rem 1rem;font-size:.88rem;font-weight:600}
 .primary:disabled{opacity:.6;cursor:default}
 .foot{font-size:.74rem;color:var(--muted);margin:.5rem 0 0}
 .sr{position:absolute;left:-9999px}
+.fb{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;margin:.5rem 0 0;font-size:.8rem;color:var(--muted)}
+.fb input{flex:1;min-width:140px;padding:.3rem .5rem;font:inherit;font-size:.8rem;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:6px}
+.mini{background:transparent;color:var(--text);border:1px solid var(--border);border-radius:6px;padding:.2rem .6rem;font:inherit;font-size:.8rem;cursor:pointer}
+.mini:hover{background:var(--accent-soft)}
 @media(max-width:520px){h1{font-size:1.35rem}.primary{padding:.75rem 1rem}}
 </style>
 </head>
@@ -89,7 +93,7 @@ summary{cursor:pointer;padding:.65rem 1rem;font-size:.88rem;font-weight:600}
       <input id="q" maxlength="300" minlength="2" required placeholder="Ask a question, e.g. What is the attendance rule?">
       <button id="go" class="primary" type="submit">Ask</button>
     </form>
-    <p class="foot">Unofficial student project, not an official IIIT Delhi service. Answers are generated from public documents and can be wrong or outdated. Always verify with the academic office.</p>
+    <p class="foot">Unofficial student project, not an official IIIT Delhi service. Answers are generated from public documents and can be wrong or outdated. Always verify with the academic office. If you use the feedback buttons, your question and the answer are sent to the developer to improve accuracy.</p>
   </div>
 </div>
 
@@ -175,7 +179,11 @@ function renderTable(container, rows, idp) {
   table.appendChild(tbody); wrap.appendChild(table); container.appendChild(wrap);
 }
 function block(container, text, idp) {
-  const lines = text.split('\n');
+  const lines = [];
+  text.split('\n').forEach(l => {
+    if (isRow(l)) lines.push(l);
+    else l.split(/<br\s*\/?>/i).forEach(p => lines.push(p));
+  });
   let list = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -228,6 +236,37 @@ function sourcesEl(sources, idp) {
   });
   return box;
 }
+
+function mini(t, fn) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'mini'; b.textContent = t; b.onclick = fn; return b;
+}
+function feedbackEl(m, i, kind) {
+  const row = document.createElement('div'); row.className = 'fb';
+  const say = t => { row.replaceChildren(); row.append(t); };
+  if (m.fb) { say('Thanks, feedback sent.'); return row; }
+  const send = async (verdict, note) => {
+    const q = (messages[i - 1] || {}).text || '';
+    try {
+      const r = await fetch('/feedback', {method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({verdict, question: q.slice(0, 300), answer: (m.text || '').slice(0, 4000), note: (note || '').slice(0, 500)})});
+      if (!r.ok) throw new Error('bad status');
+      m.fb = verdict; persist(); say('Thanks, feedback sent.');
+    } catch (e) { say('Could not send feedback right now.'); }
+  };
+  if (kind === 'miss') {
+    row.append('Do you think this is in the official documents?', mini('Yes, report it', () => send('missed')));
+    return row;
+  }
+  const copy = mini('Copy', () => navigator.clipboard.writeText(m.text).then(() => { copy.textContent = 'Copied'; }));
+  row.append('Was this accurate?', mini('Yes', () => send('up')), mini('No', () => {
+    row.replaceChildren();
+    const inp = document.createElement('input'); inp.maxLength = 500; inp.placeholder = 'What was wrong? (optional)';
+    row.append(inp, mini('Send', () => send('down', inp.value)));
+    inp.focus();
+  }), copy);
+  return row;
+}
+
 function paint(m, i) {
   const wrap = document.createElement('div'); wrap.className = 'msg ' + (m.role === 'user' ? 'user' : 'bot');
   const idp = 'm' + i + '-';
@@ -239,7 +278,11 @@ function paint(m, i) {
       block(card, 'Try rephrasing with the key terms, mention your program, or check with the academic office. Only some official documents are indexed so far.', idp);
     } else block(card, m.text, idp);
     wrap.appendChild(card);
-    if (m.sources && m.sources.length) wrap.appendChild(sourcesEl(m.sources, idp));
+    if (m.sources && m.sources.length) {
+      wrap.appendChild(sourcesEl(m.sources, idp));
+      wrap.appendChild(feedbackEl(m, i, 'answer'));
+    }
+    if (m.notfound) wrap.appendChild(feedbackEl(m, i, 'miss'));
   }
   thread.appendChild(wrap);
   return wrap;

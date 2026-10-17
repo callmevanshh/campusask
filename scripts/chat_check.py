@@ -69,4 +69,39 @@ ok = "| A | B |" in res and "| --- | --- |" in res and "```" not in res and "|  
 print("PASS" if ok else "FAIL", "| empty tables and code fences are removed, real tables are kept")
 fails += not ok
 
+from app.pipeline import _fix_br, _scrub
+
+s = _fix_br(_scrub("| a<br>b | c |\n<br>Intro line\nAccording to the UG Regulations (Oct 2025)..."))
+ok = "| a<br>b | c |" in s and "<br>" not in s.replace("a<br>b", "") and "..." not in s
+print("PASS" if ok else "FAIL", "| stray <br> and ellipsis lines are cleaned, table cells keep <br>")
+fails += not ok
+
+from app.pipeline import _finish
+
+r = resolve("What is the minimum CGPA required for graduating with Honors?", [], "")
+ok = r["extra"] == "" and not r["planning"]
+print("PASS" if ok else "FAIL", "| a plain 'minimum CGPA' question does not trigger CGPA-planning retrieval")
+fails += not ok
+
+plan_q = ("i have 116 credits by the end of 6th sem and a cgpa of 4.95, in 7th sem i have 5 courses of 4 credits each, "
+          "how much grade should i get in each minimum to get to 5 cgpa in 7th sem")
+r = resolve(plan_q, [], "")
+ok = r["planning"] and "grading scheme" in r["extra"]
+print("PASS" if ok else "FAIL", "| a personal CGPA target question is planning")
+fails += not ok
+
+r = resolve("each course credit is 4",
+            [{"role": "user", "text": plan_q}, {"role": "assistant", "text": "What are the individual course credits?"}], "")
+ok = r["use_hist"] and r["planning"]
+print("PASS" if ok else "FAIL", "| the reply to the bot's question keeps the planning context")
+fails += not ok
+
+text, cited = _finish("A fact [2].\n[1]")
+ok = text == "A fact [2]." and cited == {1, 2}
+print("PASS" if ok else "FAIL", "| a lone trailing citation line is removed but still counted")
+fails += not ok
+
+import sys
+
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")
+sys.exit(1 if fails else 0)

@@ -16,5 +16,5 @@
 {"q": "branch change rules", "pages": [23, 24], "answerable": true}
 {"q": "grading scale points for A grade", "pages": [14], "answerable": true}
 {"q": "who won the cricket world cup", "pages": [], "answerable": false}
-{"q": "mess menu today", "pages": [], "answerable": false}
+{"q": "mess menu today", "pages": [6], "answerable": true, "source": "Final-Hostel-Management.pdf", "contains": ["menu"]}
 {"q": "wifi password for hostel", "pages": [], "answerable": false}
