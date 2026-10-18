@@ -101,6 +101,16 @@ ok = text == "A fact [2]." and cited == {1, 2}
 print("PASS" if ok else "FAIL", "| a lone trailing citation line is removed but still counted")
 fails += not ok
 
+r = resolve("i have 116 credits and cgpa 4.95, 5 courses of 4 credits next sem, one course will be a D, what do i need in the rest to reach 5 cgpa", [], "")
+ok = r["planning"]
+print("PASS" if ok else "FAIL", "| a question with a known grade is planning")
+fails += not ok
+
+r = resolve("i have 116 credits and cgpa 4.95, 5 courses of 4 credits next sem, what sgpa do i need to reach 5.2 and 5.3 cgpa", [], "")
+ok = r["planning"]
+print("PASS" if ok else "FAIL", "| a question with two targets is planning")
+fails += not ok
+
 import sys
 
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")

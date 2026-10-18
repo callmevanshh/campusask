@@ -53,6 +53,7 @@ SYSTEM = (
     "Name the smallest sufficient mix, and also show the next lower mix with its average to prove it is not enough. "
     "For grade-planning questions give the final answer first, then show the working once, cleanly: no scratch work, no trial and error, "
     "If a VERIFIED CALCULATION block is given, copy its numbers exactly as written, never recompute them, present the steps in plain text, "
+    "If the block lists several targets or known grades, present every target and every known grade, each with its own numbers. "
     "and cite the grading-scheme source [n] for the grade points. "
     "and no phrases like \"let's re-check\". Write the formula as one plain-text line. "
     "Assume CGPA is the credit-weighted average over all credits done, say so, and mention that dropping worst grades and SG/CW credits can change the real figure. "

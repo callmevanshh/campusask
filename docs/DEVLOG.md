@@ -91,6 +91,18 @@ When a question names no year, the newest batch's table should win. Raising its 
 ## 23. Feedback loop and CI
 Added feedback buttons (accurate / not accurate / should have been found), a key-protected export, and a script that turns negative feedback into candidate test questions. GitHub Actions runs the deterministic tests and a retrieval regression gate (hit@3 must stay at or above 90% on every set) on every push. A lone citation line at the end of an answer is also removed now.
 
+## 24. Two targets and a known grade
+The planner handled one target and no fixed grades; a question with two targets (5.2 and 5.3) returned a wrong figure for one of them (7.65 instead of 7.33). The extraction now returns a list of targets and the grades already known. Each target is computed separately in Python, and a known grade is subtracted before the remaining courses are planned. `planner_check` asserts 6.65 and 7.33 for the two targets, 5.61 for the four remaining courses when one is a D, and the unreachable cases.
+
+## 25. A redesigned interface
+Replaced the plain layout with a landing view (example question cards grouped by topic), a skeleton loader that says what it is doing, assistant messages with an avatar, italic text in the renderer, safe-area padding on phones and a social preview image. All text is still inserted as text, never as HTML.
+
+## 26. Durable feedback
+The host's disk is wiped on every restart, so a feedback entry is also posted to a private Discord webhook when one is configured. The webhook is optional and the request waits at most five seconds for it.
+
+## 27. A rejected push
+After a long stretch of local work `git push` was rejected, because I had created the LICENSE file on GitHub's website. I made a backup branch, ran `git pull --rebase` and pushed; nothing was lost. Lesson: pull before a big push, and commit in small steps.
+
 ## Not built, on purpose
 Admin panel, analytics, accounts, postgraduate regulations, timetables (they change every semester).
 

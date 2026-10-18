@@ -4,7 +4,7 @@
 
 Cited answers to questions about IIIT Delhi's academic rules and campus policies, drawn only from official public documents. Every answer shows the document, version, section and page, with a link to the PDF at that page, so it can be checked.
 
-**Live demo:** https://campusask.onrender.com (free hosting: the first request after a quiet period can be slow)
+**Live demo:** https://campusask.onrender.com
 
 > Unofficial student project, not affiliated with IIIT Delhi. It can be wrong or out of date. Always verify with the academic office.
 
@@ -18,7 +18,7 @@ Cited answers to questions about IIIT Delhi's academic rules and campus policies
 - Handles informal questions, typos and Hinglish in my tests.
 - Understands follow-ups ("what about CSE?", "make a table") and asks which program you are in when a question depends on it.
 - Applies the rules to a student's own numbers (credits, CGPA, planned load) without promising outcomes, and tells the student to confirm with the academic office or their degree audit.
-- Plans a target CGPA: the arithmetic is done in Python, not by the language model.
+- Plans a target CGPA, including several targets in one question and courses whose grade is already known: the arithmetic is done in Python, not by the language model.
 - Says "I could not find this in the documents" instead of guessing.
 - Feedback buttons (accurate / not accurate / "should have been found") feed a loop that turns negative feedback into candidate test questions.
 
@@ -33,7 +33,7 @@ Not indexed (no document found yet): academic calendar, scholarships, certificat
 3. **Search:** BM25 over stemmed tokens with a small synonym list, typo correction against the documents' own vocabulary, and normalisation such as "1st" to "first". A program named in the question boosts that program's regulation, and the newest batch's table is preferred unless a year is asked. Campus-policy files are down-weighted for questions that do not use campus vocabulary. If a rule continues in the next chunk, that chunk is added.
 4. **Relevance:** a loose keyword gate drops clearly unrelated questions; the model decides whether the retrieved text answers the question, and a reply without a citation counts as "not found".
 5. **Answer:** the top chunks go to a Gemini Flash-Lite model that must use only those sources. On a quota error or timeout the next configured model is tried within a 45-second budget. If a model refuses, the other model gets one second opinion (a cited answer is accepted); refusals are never cached. If nothing answers, the relevant passages are shown on their own.
-6. **Planner** (`app/planner.py`): for "what SGPA do I need" questions the model only extracts the numbers as JSON; the required SGPA and the grade mix (in whole courses) are computed in Python and given back as a verified block.
+6. **Planner** (`app/planner.py`): for "what SGPA do I need" questions the model only extracts the numbers as JSON (current CGPA, credits, one or several targets, grades already known); the required SGPA for each target and the grade mix, in whole courses, are computed in Python and given back as a verified block.
 7. **UI:** one HTML/JS file: chat thread, light and dark theme, rendered tables, clickable citation badges, source panels linking to the PDF page, feedback buttons.
 
 Stack: Python 3.12, FastAPI, PyMuPDF, rank-bm25, snowballstemmer, Gemini API, Render (free tier), UptimeRobot, GitHub Actions. Locally, sentence-transformers (`all-MiniLM-L6-v2`) can be used for hybrid search; production runs keyword-only.
@@ -54,7 +54,7 @@ hit@1 is lower than hit@3 because some rules exist twice (the Evaluation Policy 
 - **Refusals:** 22 distinct unanswerable questions (hostel Wi-Fi, library hours, placements, cricket and so on): 21 refused, 1 answered by saying the policy does not state it.
 - **Answer-level check** (`python -m scripts.answer_eval`, automated substring rules, 19 fact questions and 3 refusals, facts taken from the PDFs): 22 of 22 passed. Crude, and a pass is not proof. It caught a real bug: a CGPA-planning rule fired on "minimum CGPA required for Honors" and the question was refused.
 - **Common student questions** (15, including six that a friend asked): 11 answered with citations (not each graded against the PDFs), 4 refused (bonafide certificate, provisional transcript, scholarships, fee refund policy; the documents mention refunds only for the security deposit, hostel sharing and semester leave).
-- **Deterministic tests** (no model calls, run in CI on every push): `chat_check`, `planner_check`, `failover_check`, and a retrieval gate that fails the build if hit@3 drops below 90% on any set.
+- **Deterministic tests** (no model calls, run in CI on every push): `chat_check`, `planner_check` (several targets, a known grade, unreachable targets), `failover_check`, and a retrieval gate that fails the build if hit@3 drops below 90% on any set.
 - **Real users:** not measured yet. The app collects ratings; `scripts/feedback_report.py` summarises them.
 - **Caveats:** the sets are small and written by me. My first run scored 32% hit@3 on the dev set; an audit showed 21 of the 27 misses were wrong page labels in my own questions, not retrieval failures (see `docs/DEVLOG.md`).
 
@@ -67,17 +67,17 @@ hit@1 is lower than hit@3 because some rules exist twice (the Evaluation Policy 
 - **Model names live in configuration**, because models get retired.
 
 ## Privacy
-Questions are answered statelessly. If a student presses a feedback button, the question, the answer and an optional note are stored on the server for the developer. No IP address or account is stored. The feedback export is protected by a secret key.
+Questions are answered statelessly. If a student presses a feedback button, the question, the answer and an optional note are stored for the developer (in a file on the server, in the host's logs and, if configured, in a private channel). No IP address or account is stored. The feedback export is protected by a secret key.
 
 ## Known limitations
-- Two targets in one CGPA question can give a wrong figure for one of them; the planner does not handle fixed grades ("one course is a D").
+- The planner's numbers come from a model reading the question; a badly worded question can fail extraction, and the answer then falls back to the model's own working, which can be wrong. Check the arithmetic.
 - A follow-up like "same conditions" after a clarifying question can still be refused.
 - A refused question can take up to about 30 seconds, because a second model is asked.
 - Free-tier model quota can cause occasional passages-only answers.
 - Not indexed: academic calendar, scholarships, certificate procedures.
 - The fines table is cited as page 1 although it spans five pages.
 - Keyword search misses paraphrases that share no words with the document.
-- Feedback is stored on the free host's disk, which is wiped on restart; it is also written to the host logs.
+- Feedback is kept in a file on the free host, which is wiped on restart; if a private webhook is configured, a copy is also sent there.
 - Answers are generated and can contain mistakes. Verify with the source link.
 
 ## Run locally
@@ -101,11 +101,11 @@ Set `LITE=1` to run the production-style keyword-only mode. Checks: `python -m s
 - `.github/workflows/ci.yml`: deterministic tests and the retrieval gate
 - `docs/DEVLOG.md`: the full story, including what broke
 
+## License
+MIT. See `LICENSE`.
+
 ## How this was built
 I designed and built this project myself, with help from AI assistants for drafting code, debugging, and exploring design options. I wrote the evaluation sets, checked answers against the official PDFs, fixed the failures recorded in `docs/DEVLOG.md`, and made the final design decisions (keyword search in production, maths in Python, second opinion on refusals, and the evaluation harness). I am going through the code module by module so I can explain every part.
 
 ## Next
 Index the missing documents, measure accuracy on questions from real students, and handle fixed-grade constraints in the planner.
-
-## License
-MIT. See `LICENSE`.

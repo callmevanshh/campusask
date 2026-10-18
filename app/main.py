@@ -19,6 +19,7 @@ _hits = defaultdict(deque)
 _fb_hits = defaultdict(deque)
 FEEDBACK_FILE = Path("data/feedback.jsonl")
 ADMIN_KEY = os.getenv("ADMIN_KEY", "")
+FEEDBACK_WEBHOOK = os.getenv("FEEDBACK_WEBHOOK_URL", "")
 
 
 def too_many(ip: str, limit: int = 8, window: int = 60, store=None) -> bool:
@@ -55,6 +56,18 @@ class Feedback(BaseModel):
     note: str = Field(default="", max_length=500)
 
 
+def _notify(rec: dict) -> None:
+    """Optional durable copy of a feedback entry in a private channel (a Discord webhook)."""
+    if not FEEDBACK_WEBHOOK:
+        return
+    label = {"up": "ACCURATE", "down": "NOT ACCURATE", "missed": "SHOULD HAVE BEEN FOUND"}[rec["verdict"]]
+    text = f"**{label}**\nQ: {rec['question']}\n" + (f"Note: {rec['note']}\n" if rec["note"] else "") + f"A: {rec['answer'][:900]}"
+    try:
+        httpx.post(FEEDBACK_WEBHOOK, json={"content": text[:1900], "allowed_mentions": {"parse": []}}, timeout=5)
+    except httpx.HTTPError as e:
+        print("[feedback] webhook failed:", repr(e))
+
+
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health():
     return {"status": "ok"}
@@ -81,14 +94,14 @@ def feedback(fb: Feedback, request: Request):
         raise HTTPException(status_code=429, detail="Too much feedback. Please wait a minute.")
     rec = {"t": datetime.now(timezone.utc).isoformat(timespec="seconds"), "verdict": fb.verdict,
            "question": fb.question, "answer": fb.answer, "note": fb.note}
-    line = json.dumps(rec, ensure_ascii=False)
-    print("[feedback]", line)
+    print("[feedback]", json.dumps(rec, ensure_ascii=False))
     try:
         FEEDBACK_FILE.parent.mkdir(parents=True, exist_ok=True)
         with FEEDBACK_FILE.open("a", encoding="utf-8") as f:
-            f.write(line + "\n")
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except OSError as e:
         print("[feedback] could not write the file:", e)
+    _notify(rec)
     return {"ok": True}
 
 
