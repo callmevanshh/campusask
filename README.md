@@ -52,7 +52,7 @@ I wrote question sets and measured retrieval and answers instead of eyeballing t
 hit@1 is lower than hit@3 because some rules exist twice (the Evaluation Policy repeats the UG grading table); the model sees several chunks, so this rarely changes the answer.
 
 - **Refusals:** 22 distinct unanswerable questions (hostel Wi-Fi, library hours, placements, cricket and so on): 21 refused, 1 answered by saying the policy does not state it.
-- **Answer-level check** (`python -m scripts.answer_eval`, automated substring rules, 18 fact questions and 3 refusals, facts taken from the PDFs): 22 of 22 passed. Crude, and a pass is not proof. It caught a real bug: a CGPA-planning rule fired on "minimum CGPA required for Honors" and the question was refused.
+- **Answer-level check** (`python -m scripts.answer_eval`, automated substring rules, 19 fact questions and 3 refusals, facts taken from the PDFs): 22 of 22 passed. Crude, and a pass is not proof. It caught a real bug: a CGPA-planning rule fired on "minimum CGPA required for Honors" and the question was refused.
 - **Common student questions** (15, including six that a friend asked): 11 answered with citations (not each graded against the PDFs), 4 refused (bonafide certificate, provisional transcript, scholarships, fee refund policy; the documents mention refunds only for the security deposit, hostel sharing and semester leave).
 - **Deterministic tests** (no model calls, run in CI on every push): `chat_check`, `planner_check`, `failover_check`, and a retrieval gate that fails the build if hit@3 drops below 90% on any set.
 - **Real users:** not measured yet. The app collects ratings; `scripts/feedback_report.py` summarises them.
@@ -106,3 +106,6 @@ I designed and built this project myself, with help from AI assistants for draft
 
 ## Next
 Index the missing documents, measure accuracy on questions from real students, and handle fixed-grade constraints in the planner.
+
+## License
+MIT. See `LICENSE`.
