@@ -223,7 +223,7 @@ def _finish(text):
     text = _fix_br(_drop_empty_tables(_plain_math(_scrub(text))))
     cited = {int(n) for grp in re.findall(r"\[([\d,\s]+)\]", text) for n in re.findall(r"\d+", grp)}
     # a last line holding only citation marks is noise (the citations are already counted above)
-    text = re.sub(r"\n[ \t]*(?:\[\d+(?:\s*,\s*\d+)*\][ \t]*)+$", "", text).rstrip()
+    text = re.sub(r"\n[ \t]*(?:\[\d+(?:\s*,\s*\d+)*\][ \t,;]*)+$", "", text).rstrip()
     return text, cited
 
 

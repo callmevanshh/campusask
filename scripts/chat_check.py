@@ -111,6 +111,11 @@ ok = r["planning"]
 print("PASS" if ok else "FAIL", "| a question with two targets is planning")
 fails += not ok
 
+text, cited = _finish("A fact [2].\n\n[1], [4]")
+ok = text == "A fact [2]." and cited == {1, 2, 4}
+print("PASS" if ok else "FAIL", "| a trailing line like '[1], [4]' is removed but still counted")
+fails += not ok
+
 import sys
 
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")
